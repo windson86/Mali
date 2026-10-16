@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "trained": false,
+  "version": "untrained",
+  "classes": ["crvena", "plava", "zelena", "žuta"],
+  "model": null
+}
