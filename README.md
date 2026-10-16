@@ -1,41 +1,46 @@
-# MALI 🐶
+# MALI 🐶 — Born to learn. Raised by you.
 
-**Born to learn. Raised by you.**
+Eksperimentalni Tamagotchi s malim **vlastitim AI modelom** koji će učiti iz lekcija korisnika. Bez gotovog AI API-ja i bez pretreniranih modela.
 
-Mali je eksperimentalna web igra i mali vlastiti AI projekt. Svaki igrač će imati svojeg virtualnog psića, a svi će u budućnosti doprinositi učenju jednog zajedničkog AI modela.
+## Trenutno: v0.3 — škola boja (početni eksperiment)
 
-## Trenutna verzija — prototip v0.2
+- Interaktivna soba: kućica, zdjelica, šetnja, maženje i trening smjerova.
+- Na loptici se otvara **Uči me** i **Pokaži što znaš**.
+- Loptice imaju nasumične RGB vrijednosti, **bez unaprijed zadanih točnih odgovora**.
+- Svaku lekciju boje označava korisnik. Ako boja nije jedna od ponuđene četiri, preskoči je.
+- Lekcije se zasad spremaju samo u `localStorage` korisnikova preglednika (maksimalno 1800 lekcija na uređaju).
+- Gumb **Izvezi moje lekcije (.json)** sprema ih na korisnikov uređaj radi kasnijeg treniranja.
+- `brain/active.json` je namjerno **neistreniran**. Prije prvog stvarnog treniranja Mali ne zna boje.
+- Trenutno nema centralne baze, razmjene lekcija između korisnika, automatskog treniranja ni zajedničkog AI modela na serveru.
 
-- Interaktivna soba: kućica, posuda za hranu, lopta, šetnja i trening.
-- Jednostavni SVG crteži bez vanjskih biblioteka.
-- Prikaz prilagođen mobitelima i računalima.
-- Trenutačne vrijednosti i napredak spremaju se **lokalno u pregledniku** (localStorage).
-- **Još nema** servera, zajedničkih profila, baze podataka ni stvarnog AI učenja.
+## Lokalno pokretanje
 
-## Plan daljnjeg razvoja
+```bash
+python -m http.server 8000
+```
 
-1. Doraditi izgled i interakcije u web igri.
-2. Napraviti anonimni identitet i zasebno stanje za svakog psića.
-3. Bilježiti ljudske lekcije: prepoznavanje boja i kretanje kroz prostor.
-4. Iz tih primjera trenirati naš mali, vlastiti Python AI — bez vanjskih AI servisa.
-5. Uvesti zajedničku verziju mozga, testove napretka i nagrade za korisnike.
-6. Kao moguće nagrade: promjene boje ogrlice, uha, krova kućice i drugih detalja.
+Otvoriti `http://localhost:8000`. Ne trebaju npm ni build proces. Netlify automatski objavljuje `main` granu (`netlify.toml` objavljuje korijen repozitorija).
 
-## Pokretanje lokalno
+## Stvarno treniranje vlastitog mozga (Python + NumPy)
 
-Otvori `index.html` u pregledniku. Za ovu verziju nisu potrebni instalacija, npm ni build proces.
+1. Skupiti i izvesti korisničke lekcije iz web igre. Lekcije moraju biti stvarno označene od ljudi; nemojte generirati lažne unaprijed označene primjere i prikazivati ih kao ljudske.
+2. Instalirati Python 3 i ovisnosti: `python -m pip install -r requirements.txt`.
+3. Iz korijena repozitorija pokrenuti:
 
-## Netlify
+```bash
+python tools/train_colors.py --input mali-lekcije-1.json mali-lekcije-2.json --output brain/active.json
+```
 
-Poveži repozitorij **`windson86/Mali`** s Netlifyjem:
+Skripta trenira malu neuronsku mrežu **3 RGB ulaza → 16 neurona (`tanh`) → 4 boje**. Nema color lookup tablicu i ne koristi nijedan vanjski AI servis. Minimalno treba osam različitih ljudskih primjera po boji. Neodgovarajuće ili kontradiktorne oznake istog RGB-a odbacuje. Odvaja dio primjera za provjeru na neviđenim bojama, ispisuje točnost i sprema težine u JSON.
 
-- Production branch: `main`
-- Base directory: prazno
-- Build command: prazno
-- Publish directory: `.` (korijen repozitorija)
+**Prije objave:** pogledati rezultate i provjeriti model na stvarno novim primjerima. Sačuvati staru verziju modela. Nova verzija `brain/active.json` može se poslati na GitHub nakon provjere; Netlify je potom automatski objavljuje. Samo prebacivanje lekcija ili generiranje modela ne znači automatski da je novi model bolji.
 
-Datoteka `netlify.toml` već ima odgovarajuću postavku za objavu.
+## Značajke koje dolaze kasnije
 
-Domena `mali.com.hr` povezat će se kada bude aktivna.
+- Jedinstveni anonimni identitet i napredak za svakog psića, dostupan i na više uređaja.
+- Zajednička baza ljudskih lekcija i sprječavanje spama te manipulacije primjerima.
+- Povijest naučenih verzija mozga i javna, ponovljiva mjerenja napretka.
+- Učenje kretanja pomoću ljudskih demonstracija, odvojeno od programirane simulacije hodanja.
+- Samostalni Python backend i PostgreSQL baza na našem VPS-u kad to zatreba.
 
-> **Napomena:** v0.2 je demonstracija. Ne predstavlja gotov AI i ne dijeli podatke između posjetitelja.
+Privremena web adresa: https://malipesek.netlify.app . Domena `mali.com.hr` bit će povezana nakon aktivacije.
