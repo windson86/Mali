@@ -18,6 +18,7 @@
     var stored = JSON.parse(localStorage.getItem(STORAGE) || '[]');
     if (Array.isArray(stored)) lessons = stored.filter(validLesson).slice(-MAX_LESSONS);
   } catch (err) { lessons = []; }
+  if (window.MaliCloud) window.MaliCloud.enqueueMany(lessons);
 
   fetch('./brain/active.json', { cache: 'no-store' })
     .then(function (response) { if (!response.ok) throw new Error('No model'); return response.json(); })
@@ -73,6 +74,7 @@
       '<div class="school-grid"><button class="action" data-school="teach">📖 Uči me</button>' +
       '<button class="action" data-school="test">🧠 Pokaži što znaš</button></div>' +
       '<p class="school-status">' + brainInfo + '</p>' + note() +
+      '<p class="muted">' + (window.MaliCloud ? window.MaliCloud.message() : 'Lekcije su samo na ovom uređaju.') + '</p>' +
       '<button class="action school-export" data-school="export">⬇ Izvezi moje lekcije (.json)</button>');
   }
   function chooseMode(mode) {
@@ -138,7 +140,15 @@
       context.render();
       context.speak('Hvala! 🐾', 'Lekcija spremljena samo na ovom uređaju.');
     }
-    ui('lessonStatus').textContent = 'Spremljeno: ' + label + '! Ukupno ' + lessons.length + ' lekcija. Odaberi drugu lopticu.';
+    ui('lessonStatus').textContent = 'Spremljeno: ' + label + '! Ukupno ' + lessons.length + ' lekcija. Stiže nova loptica…';
+    // The same lesson remains safely in localStorage even when the database is offline.
+    if (window.MaliCloud) window.MaliCloud.enqueueMany([entry]);
+    var finishedSample = sample;
+    var finishedMode = currentMode;
+    window.setTimeout(function () {
+      if (!ui('overlay').hidden && currentMode === finishedMode &&
+          sample === finishedSample) chooseMode(finishedMode);
+    }, 650);
   }
   function download() {
     if (!lessons.length) {

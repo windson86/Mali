@@ -11,3 +11,9 @@ __pycache__/
 *.db
 checkpoints/
 mali-lekcije-*.json
+
+# Firebase admin credentials, locally exported data
+*serviceAccount*.json
+*service-account*.json
+*mali-admin*.json
+lekcije/

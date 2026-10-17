@@ -44,3 +44,9 @@ Skripta trenira malu neuronsku mrežu **3 RGB ulaza → 16 neurona (`tanh`) → 
 - Samostalni Python backend i PostgreSQL baza na našem VPS-u kad to zatreba.
 
 Privremena web adresa: https://malipesek.netlify.app . Domena `mali.com.hr` bit će povezana nakon aktivacije.
+## Priprema za zajedničko učenje — web v0.4
+
+- Sitne UI dorade: precizniji dodir psića, zdjelica ostaje vidljiva i automatski nova loptica.
+- Datoteke `firebase-config.js`, `firebase-sync.js`, `firebase.rules.json`, `tools/export_firebase_lessons.py` pripremaju zajedničku bazu.
+- **Cloud upis je trenutno isključen** dok se ne postavi zaseban Firebase projekt, Anonymous Auth i pravila; postojeće lekcije ostaju lokalno.
+- Upute: [FIREBASE_SETUP.md](FIREBASE_SETUP.md).
