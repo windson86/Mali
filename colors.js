@@ -39,10 +39,18 @@
   }
   function rgbCss(rgb) { return 'rgb(' + rgb.join(',') + ')'; }
   function randomRgb() {
-    /* Generates unlabeled HSL colors; there is deliberately no hue -> label mapping. */
-    var hue = Math.random() * 360;
-    var sat = 0.66 + Math.random() * 0.29;
-    var light = 0.39 + Math.random() * 0.22;
+    /* Sample four visually clear hue families equally often.
+       These are generated teaching examples, NOT the model's answer key. */
+    var families = [
+      { center: 0, spread: 8 },
+      { center: 60, spread: 6, yellow: true },
+      { center: 127, spread: 12 },
+      { center: 222, spread: 12 }
+    ];
+    var chosen = families[Math.floor(Math.random() * families.length)];
+    var hue = (chosen.center + (Math.random() * 2 - 1) * chosen.spread + 360) % 360;
+    var sat = 0.78 + Math.random() * 0.17;
+    var light = chosen.yellow ? 0.52 + Math.random() * 0.09 : 0.45 + Math.random() * 0.13;
     var a = sat * Math.min(light, 1 - light);
     function channel(n) {
       var k = (n + hue / 30) % 12;
@@ -107,8 +115,9 @@
         : 'Još ne znam odgovor. Možeš me naučiti?');
     openModal(mode, mode === 'teach' ? 'Uči me bojama 🎨' : 'Pokaži što znaš 🐶',
       '<p>' + intro + '</p><div class="ball-preview school-preview" style="background:' + rgbCss(sample) + '"></div>' +
-      '<p class="muted">Odgovor određuje korisnik, ne program. Ako nijedna boja ne odgovara, preskoči.</p>' +
+      '<p class="muted">Boju određuje korisnik, ne program. „Ne znam” i „Druga loptica” preskaču primjer bez spremanja.</p>' +
       labelButtons() + '<div class="school-actions"><button class="action" data-school="skip">↻ Druga loptica</button>' +
+      '<button class="action" data-school="skip">🤷 Ne znam</button>' +
       '<button class="action" data-school="home">← Natrag</button></div>' +
       '<p id="lessonStatus" class="muted">' + lessons.length + ' spremljenih lekcija na ovom uređaju.</p>');
   }
