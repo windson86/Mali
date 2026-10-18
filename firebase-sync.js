@@ -70,16 +70,23 @@
     var actions=[];
     for(var i=0;i<route.actions.length;i++) {
       var a=route.actions[i];
-      if(!a || !validPoint(a.from,n) || !validPoint(a.to,n) ||
+      if(!a) return null;
+      // Maze v0.6 and v0.7 saved only one goal and omitted per-move target fields.
+      // Reconstruct ONLY that documented single-ball case; never guess multi-ball targets.
+      var targetIndex=a.target_index;
+      if(targetIndex == null && goals.length === 1) targetIndex=0;
+      var target=a.target;
+      if(target == null && goals.length === 1 && targetIndex === 0) target=goals[0];
+      if(!validPoint(a.from,n) || !validPoint(a.to,n) ||
          !['up','down','left','right'].includes(a.action) ||
          typeof a.blocked !== 'boolean' ||
-         !Number.isInteger(a.target_index) || a.target_index<0 || a.target_index>=goals.length ||
-         !validPoint(a.target,n) ||
+         !Number.isInteger(targetIndex) || targetIndex<0 || targetIndex>=goals.length ||
+         !validPoint(target,n) ||
          !Array.isArray(a.known_walls) || a.known_walls.length>Math.ceil(n*n*0.35) ||
          !a.known_walls.every(k=>validWall(k,n))) return null;
       actions.push({
         from:a.from.slice(),to:a.to.slice(),action:a.action,blocked:a.blocked,
-        known_walls:a.known_walls.slice(),target_index:a.target_index,target:a.target.slice()
+        known_walls:a.known_walls.slice(),target_index:targetIndex,target:target.slice()
       });
     }
     var compact={
