@@ -181,11 +181,14 @@
     for(let y=0;y<N;y++)for(let x=0;x<N;x++){
       const k=pos(x,y),dog=world.dog[0]===x&&world.dog[1]===y,
         i=world.goals.findIndex(g=>g[0]===x&&g[1]===y),rock=world.known.has(k);
-      const kind=dog?'dog':i>=0?(i===world.targetIndex?'goal':'future'):rock?'rock':'empty';
-      const what=dog?'🐶':i>=0?'<span class="ml-ball" style="--ml-ball-color:rgb('+
+      // Previously collected balls must disappear visually. The model already
+      // receives world.goals[world.targetIndex], so drawing an old ball was misleading.
+      const pendingBall=i>=world.targetIndex;
+      const kind=dog?'dog':pendingBall?(i===world.targetIndex?'goal':'future'):rock?'rock':'empty';
+      const what=dog?'🐶':pendingBall?'<span class="ml-ball" style="--ml-ball-color:rgb('+
         world.ballRgbs[i].join(',')+')"><span class="ml-ball-num">'+(i+1)+'</span></span>':rock?'🪨':'';
       out+='<div class="ml-cell ml-'+kind+'" role="gridcell" aria-label="'+
-        (dog?'Mali':i>=0?'Loptica '+(i+1):rock?'Prepreka':'Nepoznato polje')+'">'+what+'</div>';
+        (dog?'Mali':pendingBall?'Loptica '+(i+1):rock?'Prepreka':'Prazno polje')+'">'+what+'</div>';
     }
     return out;
   }
