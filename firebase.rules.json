@@ -91,7 +91,6 @@
       "v1": {
         "$uid": {
           ".read": "auth != null && auth.uid === $uid",
-          ".validate": "newData.numChildren() <= 200",
           "$routeId": {
             ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.exists() && $routeId.matches(/^maze-[a-z0-9-]{12,60}$/)",
             ".validate": "newData.hasChildren(['size','start','goals','actions','moves','hits','optimal_steps','config_revision','created_at','server_at'])",
@@ -105,13 +104,13 @@
               "1": {
                 ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 15 && newData.val() % 1 === 0"
               },
-              ".validate": "newData.hasChildren(['0','1']) && newData.numChildren() === 2",
+              ".validate": "newData.hasChildren(['0','1'])",
               "$other": {
                 ".validate": false
               }
             },
             "goals": {
-              ".validate": "newData.numChildren() >= 1 && newData.numChildren() <= 3",
+              ".validate": "newData.hasChild('0')",
               "$index": {
                 "0": {
                   ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 15 && newData.val() % 1 === 0"
@@ -119,22 +118,21 @@
                 "1": {
                   ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 15 && newData.val() % 1 === 0"
                 },
-                ".validate": "newData.hasChildren(['0','1']) && newData.numChildren() === 2",
+                ".validate": "$index.matches(/^[0-2]$/) && newData.hasChildren(['0','1'])",
                 "$other": {
                   ".validate": false
                 }
               }
             },
             "walls": {
-              ".validate": "newData.numChildren() <= 90",
               "$index": {
-                ".validate": "newData.isString() && newData.val().length >= 3 && newData.val().length <= 5"
+                ".validate": "$index.matches(/^([0-9]|[1-8][0-9])$/) && newData.isString() && newData.val().length >= 3 && newData.val().length <= 5"
               }
             },
             "actions": {
-              ".validate": "newData.numChildren() >= 1 && newData.numChildren() <= 800",
+              ".validate": "newData.hasChild('0')",
               "$index": {
-                ".validate": "newData.hasChildren(['action','from','to','blocked','target','target_index'])",
+                ".validate": "$index.matches(/^([0-9]|[1-9][0-9]|[1-7][0-9][0-9])$/) && newData.hasChildren(['action','from','to','blocked','target','target_index'])",
                 "action": {
                   ".validate": "newData.isString() && (newData.val() === 'up' || newData.val() === 'down' || newData.val() === 'left' || newData.val() === 'right')"
                 },
@@ -145,7 +143,7 @@
                   "1": {
                     ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 15 && newData.val() % 1 === 0"
                   },
-                  ".validate": "newData.hasChildren(['0','1']) && newData.numChildren() === 2",
+                  ".validate": "newData.hasChildren(['0','1'])",
                   "$other": {
                     ".validate": false
                   }
@@ -157,7 +155,7 @@
                   "1": {
                     ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 15 && newData.val() % 1 === 0"
                   },
-                  ".validate": "newData.hasChildren(['0','1']) && newData.numChildren() === 2",
+                  ".validate": "newData.hasChildren(['0','1'])",
                   "$other": {
                     ".validate": false
                   }
@@ -169,7 +167,7 @@
                   "1": {
                     ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 15 && newData.val() % 1 === 0"
                   },
-                  ".validate": "newData.hasChildren(['0','1']) && newData.numChildren() === 2",
+                  ".validate": "newData.hasChildren(['0','1'])",
                   "$other": {
                     ".validate": false
                   }
@@ -181,9 +179,8 @@
                   ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 2"
                 },
                 "known_walls": {
-                  ".validate": "newData.numChildren() <= 90",
                   "$index": {
-                    ".validate": "newData.isString() && newData.val().length >= 3 && newData.val().length <= 5"
+                    ".validate": "$index.matches(/^([0-9]|[1-8][0-9])$/) && newData.isString() && newData.val().length >= 3 && newData.val().length <= 5"
                   }
                 },
                 "$other": {
