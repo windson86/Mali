@@ -99,7 +99,11 @@
       '<div id="ml-controlslot">'+(world.done?resultHtml():controlsHtml())+'</div>'+
       '<div class="ml-actions"><button class="action" type="button" data-ml-action="new">↻ Novi labirint</button>'+
       '<button id="ml-export" class="action" type="button" data-ml-action="export">⬇ Izvezi rute ('+saved.length+')</button></div>'+
-      '<p class="muted ml-footnote">Konfiguracija rev. '+window.MaliConfig.revision()+' ('+window.MaliConfig.source()+') · '+N+'×'+N+'. Rute ostaju lokalne; Mali još ne hoda sam.</p>');
+      '<p class="muted ml-footnote">Konfiguracija rev. '+window.MaliConfig.revision()+' ('+window.MaliConfig.source()+') · '+N+'×'+N+'. Mali još ne hoda sam.</p>'+
+      '<p id="ml-cloud-status" class="muted ml-footnote">'+
+        (window.MaliCloud && window.MaliCloud.navigationMessage
+          ? window.MaliCloud.navigationMessage()
+          : 'Rute su spremljene lokalno.')+'</p>');
   }
   function update(message){
     // Never re-open the modal on each move. This also preserves focus and grid dimensions.
@@ -111,6 +115,8 @@
       el('ml-controlslot').innerHTML=resultHtml();
       el('ml-export').textContent='⬇ Izvezi rute ('+saved.length+')';
     }
+    if(el('ml-cloud-status') && window.MaliCloud && window.MaliCloud.navigationMessage)
+      el('ml-cloud-status').textContent=window.MaliCloud.navigationMessage();
   }
   function solved(){
     world.done=true;
@@ -124,6 +130,9 @@
     const previous=saved.slice();saved.push(entry);if(saved.length>200)saved.shift();
     try{localStorage.setItem(KEY,JSON.stringify(saved));}
     catch(_){saved=previous;world.storageError=true;return;}
+    // Keep local copy forever. Queue the same successful demonstration for the shared brain.
+    if(window.MaliCloud && window.MaliCloud.enqueueNavigationMany)
+      window.MaliCloud.enqueueNavigationMany([entry]);
     ctx.s.xp=(ctx.s.xp||0)+8;
     ctx.s.joy=Math.min(100,(ctx.s.joy||0)+6);
     ctx.s.energy=Math.max(0,(ctx.s.energy||0)-5);

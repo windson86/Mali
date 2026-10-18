@@ -86,6 +86,135 @@
           }
         }
       }
+    },
+    "navigationLessons": {
+      "v1": {
+        "$uid": {
+          ".read": "auth != null && auth.uid === $uid",
+          ".validate": "newData.numChildren() <= 200",
+          "$routeId": {
+            ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.exists() && $routeId.matches(/^maze-[a-z0-9-]{12,60}$/)",
+            ".validate": "newData.hasChildren(['size','start','goals','actions','moves','hits','optimal_steps','config_revision','created_at','server_at'])",
+            "size": {
+              ".validate": "newData.isNumber() && (newData.val() === 8 || newData.val() === 12 || newData.val() === 16)"
+            },
+            "start": {
+              "0": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 15 && newData.val() % 1 === 0"
+              },
+              "1": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 15 && newData.val() % 1 === 0"
+              },
+              ".validate": "newData.hasChildren(['0','1']) && newData.numChildren() === 2",
+              "$other": {
+                ".validate": false
+              }
+            },
+            "goals": {
+              ".validate": "newData.numChildren() >= 1 && newData.numChildren() <= 3",
+              "$index": {
+                "0": {
+                  ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 15 && newData.val() % 1 === 0"
+                },
+                "1": {
+                  ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 15 && newData.val() % 1 === 0"
+                },
+                ".validate": "newData.hasChildren(['0','1']) && newData.numChildren() === 2",
+                "$other": {
+                  ".validate": false
+                }
+              }
+            },
+            "walls": {
+              ".validate": "newData.numChildren() <= 90",
+              "$index": {
+                ".validate": "newData.isString() && newData.val().length >= 3 && newData.val().length <= 5"
+              }
+            },
+            "actions": {
+              ".validate": "newData.numChildren() >= 1 && newData.numChildren() <= 800",
+              "$index": {
+                ".validate": "newData.hasChildren(['action','from','to','blocked','target','target_index'])",
+                "action": {
+                  ".validate": "newData.isString() && (newData.val() === 'up' || newData.val() === 'down' || newData.val() === 'left' || newData.val() === 'right')"
+                },
+                "from": {
+                  "0": {
+                    ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 15 && newData.val() % 1 === 0"
+                  },
+                  "1": {
+                    ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 15 && newData.val() % 1 === 0"
+                  },
+                  ".validate": "newData.hasChildren(['0','1']) && newData.numChildren() === 2",
+                  "$other": {
+                    ".validate": false
+                  }
+                },
+                "to": {
+                  "0": {
+                    ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 15 && newData.val() % 1 === 0"
+                  },
+                  "1": {
+                    ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 15 && newData.val() % 1 === 0"
+                  },
+                  ".validate": "newData.hasChildren(['0','1']) && newData.numChildren() === 2",
+                  "$other": {
+                    ".validate": false
+                  }
+                },
+                "target": {
+                  "0": {
+                    ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 15 && newData.val() % 1 === 0"
+                  },
+                  "1": {
+                    ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 15 && newData.val() % 1 === 0"
+                  },
+                  ".validate": "newData.hasChildren(['0','1']) && newData.numChildren() === 2",
+                  "$other": {
+                    ".validate": false
+                  }
+                },
+                "blocked": {
+                  ".validate": "newData.isBoolean()"
+                },
+                "target_index": {
+                  ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 2"
+                },
+                "known_walls": {
+                  ".validate": "newData.numChildren() <= 90",
+                  "$index": {
+                    ".validate": "newData.isString() && newData.val().length >= 3 && newData.val().length <= 5"
+                  }
+                },
+                "$other": {
+                  ".validate": false
+                }
+              }
+            },
+            "moves": {
+              ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 1 && newData.val() <= 800"
+            },
+            "hits": {
+              ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 800"
+            },
+            "optimal_steps": {
+              ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 1 && newData.val() <= 800"
+            },
+            "config_revision": {
+              ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0"
+            },
+            "created_at": {
+              ".validate": "newData.isString() && newData.val().length > 10 && newData.val().length <= 40"
+            },
+            "server_at": {
+              ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= now"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      }
     }
   }
 }

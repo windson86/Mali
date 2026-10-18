@@ -81,3 +81,13 @@ Privremena web adresa: https://malipesek.netlify.app . Domena `mali.com.hr` bit 
 - Web podržava dinamički popis oznaka boja. **„Nijedna od ponuđenih”** bilježi RGB kao `colorFeedback/v1/${uid}/${id}`, zasebno od lekcija za treniranje. „Ne znam” samo preskače. Za promjenu broja klasa mora se nadograditi i Python trener te objaviti kompatibilan naučeni model.
 - Trenutno `brain/active.json` i dalje dolazi s Netlifyja: objava novog mozga kroz lokalnu konzolu/Firebase slijedi u zasebnom koraku.
 - Za promjene koje web već zna obraditi ne treba novi deploy: igra povremeno osvježava postavke; promjene labirinta primjenjuju se pri izradi sljedeće mape nakon uspješnog osvježenja. Osvježi stranicu želiš li odmah učitati posljednju reviziju.
+
+## Navigacijske lekcije u Firebaseu
+
+- Nakon što korisnik dovrši sve loptice u labirintu, potpuna demonstracija se **prvo čuva lokalno** kao i prije, a zatim se stavlja u red za Firebase `navigationLessons/v1/{anonymousUid}/{routeId}`.
+- Web nakon prvog učitavanja automatski pronalazi i **ranije dovršene rute** iz `mali-navigation-lessons-v1` u pregledniku te ih pokušava poslati. Poslane ID-ove pamti pod zasebnim ključem `mali-uploaded-navigation-lessons-v1` kako se ne bi slale ponovno. Ne briše lokalne kopije.
+- Firebase prima samo normalizirane zapise: veličinu mreže, početak, redoslijed ciljeva, prepreke, slijed poteza, viđene prepreke u trenutku poteza, aktualni cilj i metapodatke. Boje loptica nisu potrebne za treniranje navigacije i ne šalju se u tu zbirku.
+- Zapisi su ograničeni na 800 poteza i 185.000 znakova radi zaštite besplatnih Firebase resursa. Prevelike rute ostaju lokalno i mogu se izvesti kao JSON.
+- Nove **Firebase Realtime Database Rules** uključuju `navigationLessons/v1` kao kreiraj-samo, po anonimnom korisniku, sa zabranom javnog čitanja. Potrebno je **ručno objaviti novu cjelovitu datoteku `firebase.rules.json`** u Firebase Console → Realtime Database → Rules, jer GitHub commit ne mijenja aktivna Firebase pravila. Ostala pravila ostaju sačuvana.
+- Labirint prikazuje broj ruta koje čekaju slanje ili broj potvrđeno poslanih ruta. Ako veza ili pravila ne rade, lokalni podaci ostaju sačuvani i pokušaj se ponavlja pri novom otvaranju weba.
+- Ovaj korak **samo prikuplja demonstracije**. Mali još nema trenirani navigacijski model niti samostalno odabire smjer. Python trening na rutama radi se u idućoj fazi.
