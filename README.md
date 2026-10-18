@@ -91,3 +91,15 @@ Privremena web adresa: https://malipesek.netlify.app . Domena `mali.com.hr` bit 
 - Nove **Firebase Realtime Database Rules** uključuju `navigationLessons/v1` kao kreiraj-samo, po anonimnom korisniku, sa zabranom javnog čitanja. Potrebno je **ručno objaviti novu cjelovitu datoteku `firebase.rules.json`** u Firebase Console → Realtime Database → Rules, jer GitHub commit ne mijenja aktivna Firebase pravila. Ostala pravila ostaju sačuvana.
 - Labirint prikazuje broj ruta koje čekaju slanje ili broj potvrđeno poslanih ruta. Ako veza ili pravila ne rade, lokalni podaci ostaju sačuvani i pokušaj se ponavlja pri novom otvaranju weba.
 - Ovaj korak **samo prikuplja demonstracije**. Mali još nema trenirani navigacijski model niti samostalno odabire smjer. Python trening na rutama radi se u idućoj fazi.
+
+
+## Navigacijski mozak v0.2 — samostalni pokušaji, petlje i ljudska pomoć
+
+- Web učitava **samo istrenirani model** iz Firebase `brain/navigation/active`, kojeg vlasnik prethodno objavljuje iz lokalnog **MALI Control Center v0.2**. Nikad ne objavljivati privatni Firebase Admin ključ. Neistrenirani ili odsutni model blokira opciju `🧠 Probaj sam` uz jasnu poruku.
+- `navigation-brain.js` računa isti vektor od 18 značajki kao lokalni Python trener (trenutačni položaj i cilj, samo otkrivene prepreke, broj ranijih posjeta, prethodni smjer, dimenzija i indeks loptice). Ne koristi skriveni BFS ni informacije o neotkrivenim preprekama za odlučivanje; igra samo filtrira već poznate zidove.
+- U labirintu `🧠 Probaj sam` pokreće model, `⏹ Zaustavi` prekida. Nakon `loop_repeats` identičnih obilazaka (zadano 4, podesivo na 2–6 iz konzole) Mali prekida i pita `🐾 Pomozi mi`. Ciklus se smatra istim samo ako se ponovi isti uređeni niz polja za isti cilj.
+- Svaka petlja sprema se lokalno te se neovisno sinkronizira u `navigationIncidents/v1/$uid/$incidentId`. Nakon što čovjek preuzme strelice i stigne do aktualnog cilja, ta **isključivo ljudska korekcija** sprema se u `navigationCorrections/v1/$uid/$incidentId`.
+- **Važno:** potezi Malijevog autonomnog modela **ne ulaze u `navigationLessons`** i ne smiju biti tretirani kao ljudsko učenje. Novi Python trener v0.2 uči na ljudskim dovršenim rutama i potvrđenim korekcijama. Nikada ne trenira na vlastitim pokušajima modela.
+- `firebase.rules.json` dobiva tri sigurno odvojena nova čvora: javno čitanje objavljenog modela bez klijentskog pisanja te prijavu incidenata i korekcija samo pod osobnim anonimnim UID-om. Za rad potrebno je **ručno zamijeniti i objaviti sva pravila u Firebase Console → Realtime Database → Rules**. GitHub promjene same ne primjenjuju Firebase pravila.
+- Lokalni Control Center v0.2 ima karticu Navigacija: broj petlji, broj riješenih korekcija, skicu labirinta po incidentu, objavu istreniranog `brain/navigation-active.json`, te izbor `loop_repeats` u kartici Labirint. Postojeći lokalni servisni ključ kopira se samo na korisnikov laptop; ne nalazi se u GitHubu niti u ZIP-u.
+- Model treba prvo istrenirati lokalnim Python alatom (v0.2), zatim **objaviti u konzoli**. Bez ovog koraka web ne može predviđati smjerove. Stari modeli boja i stare rute ostaju netaknuti.

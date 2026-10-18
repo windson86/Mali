@@ -23,3 +23,9 @@
 .ml-future .ml-ball{opacity:.6}
 .ml-ball-num{position:absolute;inset:0;display:grid;place-items:center;color:#24232a;text-shadow:0 1px 2px #ffffffaa;font-size:clamp(8px,.75em,14px);font-weight:1000;line-height:1}
 @media(max-width:360px){.ml-board{gap:1px;padding:2px}}
+
+/* MALI navigation model & four-loop assisted teaching */
+#ml-auto{background:#d5e8fa}
+#ml-stop{background:#ffe7d1}
+#ml-cloud-status{overflow-wrap:anywhere}
+.ml-result{line-height:1.5}

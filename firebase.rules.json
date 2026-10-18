@@ -212,6 +212,201 @@
           }
         }
       }
+    },
+    "brain": {
+      "navigation": {
+        "active": {
+          ".read": true,
+          ".write": false
+        }
+      }
+    },
+    "navigationIncidents": {
+      "v1": {
+        "$uid": {
+          ".read": "auth != null && auth.uid === $uid",
+          "$incidentId": {
+            ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.exists() && $incidentId.matches(/^loop-[a-z0-9-]{12,60}$/)",
+            ".validate": "newData.hasChildren(['kind','size','dog','goals','cycle','cycle_length','repetitions','model_version','created_at','steps','target_index','server_at'])",
+            "kind": {
+              ".validate": "newData.isString() && newData.val() === 'loop'"
+            },
+            "size": {
+              ".validate": "newData.isNumber() && (newData.val() === 8 || newData.val() === 12 || newData.val() === 16)"
+            },
+            "dog": {
+              "0": {
+                ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 15"
+              },
+              "1": {
+                ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 15"
+              },
+              ".validate": "newData.hasChildren(['0','1'])",
+              "$other": {
+                ".validate": false
+              }
+            },
+            "goals": {
+              ".validate": "newData.hasChild('0')",
+              "$index": {
+                "0": {
+                  ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 15"
+                },
+                "1": {
+                  ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 15"
+                },
+                ".validate": "$index.matches(/^[0-2]$/) && newData.hasChildren(['0','1'])",
+                "$other": {
+                  ".validate": false
+                }
+              }
+            },
+            "walls": {
+              "$index": {
+                ".validate": "$index.matches(/^([0-9]|[1-8][0-9])$/) && newData.isString() && newData.val().length >= 3 && newData.val().length <= 5"
+              }
+            },
+            "known_walls": {
+              "$index": {
+                ".validate": "$index.matches(/^([0-9]|[1-8][0-9])$/) && newData.isString() && newData.val().length >= 3 && newData.val().length <= 5"
+              }
+            },
+            "cycle": {
+              ".validate": "newData.hasChild('0')",
+              "$index": {
+                ".validate": "$index.matches(/^([0-9]|[1-2][0-9]|3[0-1])$/) && newData.isString() && newData.val().length >= 3 && newData.val().length <= 5"
+              }
+            },
+            "cycle_length": {
+              ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 2 && newData.val() <= 32"
+            },
+            "repetitions": {
+              ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 2 && newData.val() <= 6"
+            },
+            "target_index": {
+              ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 2"
+            },
+            "steps": {
+              ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 1 && newData.val() <= 800"
+            },
+            "config_revision": {
+              ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0"
+            },
+            "model_version": {
+              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 60"
+            },
+            "created_at": {
+              ".validate": "newData.isString() && newData.val().length >= 11 && newData.val().length <= 40"
+            },
+            "server_at": {
+              ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= now"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      }
+    },
+    "navigationCorrections": {
+      "v1": {
+        "$uid": {
+          ".read": "auth != null && auth.uid === $uid",
+          "$incidentId": {
+            ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.exists() && $incidentId.matches(/^loop-[a-z0-9-]{12,60}$/)",
+            ".validate": "newData.hasChildren(['incident_id','size','start','target','target_index','actions','resolved','created_at','server_at'])",
+            "incident_id": {
+              ".validate": "newData.isString() && newData.val().matches(/^loop-[a-z0-9-]{12,60}$/)"
+            },
+            "size": {
+              ".validate": "newData.isNumber() && (newData.val() === 8 || newData.val() === 12 || newData.val() === 16)"
+            },
+            "start": {
+              "0": {
+                ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 15"
+              },
+              "1": {
+                ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 15"
+              },
+              ".validate": "newData.hasChildren(['0','1'])",
+              "$other": {
+                ".validate": false
+              }
+            },
+            "target": {
+              "0": {
+                ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 15"
+              },
+              "1": {
+                ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 15"
+              },
+              ".validate": "newData.hasChildren(['0','1'])",
+              "$other": {
+                ".validate": false
+              }
+            },
+            "target_index": {
+              ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 2"
+            },
+            "actions": {
+              ".validate": "newData.hasChild('0')",
+              "$index": {
+                ".validate": "$index.matches(/^([0-9]|[1-9][0-9]|[1-4][0-9][0-9])$/) && newData.hasChildren(['from','to','action','blocked'])",
+                "from": {
+                  "0": {
+                    ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 15"
+                  },
+                  "1": {
+                    ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 15"
+                  },
+                  ".validate": "newData.hasChildren(['0','1'])",
+                  "$other": {
+                    ".validate": false
+                  }
+                },
+                "to": {
+                  "0": {
+                    ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 15"
+                  },
+                  "1": {
+                    ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 15"
+                  },
+                  ".validate": "newData.hasChildren(['0','1'])",
+                  "$other": {
+                    ".validate": false
+                  }
+                },
+                "action": {
+                  ".validate": "newData.isString() && (newData.val() === 'up' || newData.val() === 'down' || newData.val() === 'left' || newData.val() === 'right')"
+                },
+                "blocked": {
+                  ".validate": "newData.isBoolean() && newData.val() === false"
+                },
+                "known_walls": {
+                  "$index": {
+                    ".validate": "$index.matches(/^([0-9]|[1-8][0-9])$/) && newData.isString() && newData.val().length >= 3 && newData.val().length <= 5"
+                  }
+                },
+                "$other": {
+                  ".validate": false
+                }
+              }
+            },
+            "resolved": {
+              ".validate": "newData.isBoolean() && newData.val() === true"
+            },
+            "created_at": {
+              ".validate": "newData.isString() && newData.val().length >= 11 && newData.val().length <= 40"
+            },
+            "server_at": {
+              ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= now"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      }
     }
   }
 }

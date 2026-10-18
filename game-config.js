@@ -16,7 +16,7 @@
       ],
       allow_dont_know:true,allow_unlisted_feedback:true
     },
-    maze:{size:8,blocked_percent:13,ball_count:1,vision_radius:2,ball_order:'sequential'}
+    maze:{size:8,blocked_percent:13,ball_count:1,vision_radius:2,ball_order:'sequential',loop_repeats:4}
   };
   let config=defaults, source='zadano', lastRequest=0, inflight=null;
   function isNum(n,a,b){return typeof n==='number'&&Number.isFinite(n)&&n>=a&&n<=b;}
@@ -48,7 +48,7 @@
       colors:{items:colors,allow_dont_know:raw.colors.allow_dont_know!==false,
         allow_unlisted_feedback:raw.colors.allow_unlisted_feedback!==false},
       maze:{size:maze.size,blocked_percent:maze.blocked_percent,ball_count:maze.ball_count,
-        vision_radius:maze.vision_radius,ball_order:'sequential'}
+        vision_radius:maze.vision_radius,ball_order:'sequential',loop_repeats:[2,3,4,5,6].includes(maze.loop_repeats)?maze.loop_repeats:4}
     };
   }
   try{

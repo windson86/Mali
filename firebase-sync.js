@@ -22,6 +22,62 @@
   var feedbackSent = new Set();
   try { const v=JSON.parse(localStorage.getItem(FB_SENT)||'[]');if(Array.isArray(v))feedbackSent=new Set(v); }
   catch (_) {}
+  var INCIDENT_STORE='mali-local-navigation-incidents-v1';
+  var FIX_STORE='mali-local-navigation-corrections-v1';
+  var INCIDENT_SENT='mali-synced-navigation-incidents-v1';
+  var FIX_SENT='mali-synced-navigation-corrections-v1';
+  function readArray(key){
+    try{const x=JSON.parse(localStorage.getItem(key)||'[]');return Array.isArray(x)?x:[];}catch(_){return [];}
+  }
+  var incidentSent=new Set(readArray(INCIDENT_SENT)), correctionSent=new Set(readArray(FIX_SENT));
+  var incidentQueue=new Map(), correctionQueue=new Map();
+  function saveLocal(key,item){
+    const stored=readArray(key),without=stored.filter(x=>x&&x.id!==item.id);
+    without.push(item);
+    try{localStorage.setItem(key,JSON.stringify(without.slice(-100)));}catch(err){
+      console.warn('Mali: lokalna arhiva incidenta nije dostupna.',err);
+      return false;
+    }
+    return true;
+  }
+  function acceptableIncident(item){
+    return item && /^loop-[a-z0-9-]{12,60}$/.test(item.id||'') &&
+      item.kind==='loop' && [8,12,16].includes(item.size) &&
+      Array.isArray(item.dog) && item.dog.length===2 &&
+      Array.isArray(item.goals) && item.goals.length>=1 && item.goals.length<=3 &&
+      Array.isArray(item.cycle) && item.cycle.length>=2 && item.cycle.length<=32 &&
+      Array.isArray(item.walls) && item.walls.length<=90 &&
+      Array.isArray(item.known_walls) && item.known_walls.length<=90 &&
+      Number.isInteger(item.cycle_length) && item.cycle_length>=2 && item.cycle_length<=32 &&
+      Number.isInteger(item.repetitions) && item.repetitions>=2 && item.repetitions<=6 &&
+      Number.isInteger(item.steps) && item.steps>=1 && item.steps<=800 &&
+      Number.isInteger(item.target_index) && item.target_index>=0 && item.target_index<=2 &&
+      typeof item.model_version==='string' && item.model_version.length<=60 &&
+      typeof item.created_at==='string' && JSON.stringify(item).length<14000;
+  }
+  function acceptableCorrection(item){
+    return item && /^loop-[a-z0-9-]{12,60}$/.test(item.id||'') &&
+      item.incident_id===item.id && item.resolved===true &&
+      [8,12,16].includes(item.size) && Number.isInteger(item.target_index) &&
+      Array.isArray(item.start) && item.start.length===2 &&
+      Array.isArray(item.target) && item.target.length===2 &&
+      Array.isArray(item.actions) && item.actions.length>0 && item.actions.length<=500 &&
+      item.actions.every(a=>a && ['up','down','left','right'].includes(a.action) &&
+        a.blocked===false && Array.isArray(a.from) && a.from.length===2 &&
+        Array.isArray(a.to) && a.to.length===2 &&
+        Array.isArray(a.known_walls) && a.known_walls.length<=90) &&
+      typeof item.created_at==='string' && JSON.stringify(item).length<110000;
+  }
+  function enqueueIncident(item){
+    if(!acceptableIncident(item)||!saveLocal(INCIDENT_STORE,item))return false;
+    if(configured&&!incidentSent.has(item.id))incidentQueue.set(item.id,item);
+    void drain();return true;
+  }
+  function enqueueCorrection(item){
+    if(!acceptableCorrection(item)||!saveLocal(FIX_STORE,item))return false;
+    if(configured&&!correctionSent.has(item.id))correctionQueue.set(item.id,item);
+    void drain();return true;
+  }
   var database = null, userId = null, sdk = null;
   var working = false, ready = false, error = '';
   var sentThisPage = 0;
@@ -136,20 +192,25 @@
     void drain();
   }
   async function drain() {
-    if (!ready || working || (!pending.size && !feedbackPending.size && !navigationPending.size) || sentThisPage >= 150) return;
+    if (!ready || working || (!pending.size && !feedbackPending.size && !navigationPending.size && !incidentQueue.size && !correctionQueue.size) || sentThisPage >= 150) return;
     working = true;
     try {
-      while ((navigationPending.size || pending.size || feedbackPending.size) && sentThisPage < 150) {
+      while ((navigationPending.size || pending.size || feedbackPending.size || incidentQueue.size || correctionQueue.size) && sentThisPage < 150) {
         var isNavigation=!!navigationPending.size;
-        var isFeedback=!isNavigation && !pending.size;
+        var isIncident=!isNavigation && !!incidentQueue.size;
+        var isCorrection=!isNavigation && !isIncident && !!correctionQueue.size;
+        var isFeedback=!isNavigation && !isIncident && !isCorrection && !pending.size;
         var lesson=isNavigation?navigationPending.values().next().value:
+          isIncident?incidentQueue.values().next().value:
+          isCorrection?correctionQueue.values().next().value:
           (isFeedback?feedbackPending:pending).values().next().value;
         var routeId=isNavigation?navigationPending.keys().next().value:null;
         try {
           await sdk.set(sdk.ref(database,
-            (isNavigation?'navigationLessons/v1/':isFeedback?'colorFeedback/v1/':'colorLessons/v1/') +
+            (isNavigation?'navigationLessons/v1/':isIncident?'navigationIncidents/v1/':
+              isCorrection?'navigationCorrections/v1/':isFeedback?'colorFeedback/v1/':'colorLessons/v1/') +
             userId + '/' + (isNavigation?routeId:lesson.id)),
-            isNavigation ? {...lesson,server_at:sdk.serverTimestamp()} :
+            (isNavigation || isIncident || isCorrection) ? Object.assign({}, ...Object.keys(lesson).filter(k=>k!=='id').map(k=>({[k]:lesson[k]})),{server_at:sdk.serverTimestamp()}) :
               isFeedback ? {rgb:lesson.rgb,source:lesson.source,created_at:lesson.created_at,
                 server_at:sdk.serverTimestamp()} :
                 {rgb:lesson.rgb,label:lesson.label,source:lesson.source,created_at:lesson.created_at,
@@ -157,6 +218,12 @@
           if(isNavigation) {
             navigationSent.add(routeId);navigationPending.delete(routeId);
             try{localStorage.setItem(NAV_KEY,JSON.stringify(Array.from(navigationSent).slice(-200)));}catch(_){}
+          }else if(isIncident || isCorrection) {
+            var sent=isIncident?incidentSent:correctionSent;
+            var queue=isIncident?incidentQueue:correctionQueue;
+            var key=isIncident?INCIDENT_SENT:FIX_SENT;
+            sent.add(lesson.id);queue.delete(lesson.id);
+            try{localStorage.setItem(key,JSON.stringify(Array.from(sent).slice(-200)));}catch(_){}
           }else if(isFeedback){
             feedbackSent.add(lesson.id);feedbackPending.delete(lesson.id);
             try{localStorage.setItem(FB_SENT,JSON.stringify(Array.from(feedbackSent).slice(-1000)));}catch(_){}
@@ -175,12 +242,16 @@
     } finally { working = false; }
   }
   window.MaliCloud = {
+    enqueueIncident:enqueueIncident,
+    enqueueCorrection:enqueueCorrection,
     enqueueMany:enqueueMany,
     enqueueFeedbackMany:enqueueFeedbackMany,
     enqueueNavigationMany:enqueueNavigationMany,
     navigationMessage:navigationMessage,
     message:message
   };
+  for(const item of readArray(INCIDENT_STORE)){if(acceptableIncident(item)&&!incidentSent.has(item.id))incidentQueue.set(item.id,item);}
+  for(const item of readArray(FIX_STORE)){if(acceptableCorrection(item)&&!correctionSent.has(item.id))correctionQueue.set(item.id,item);}
   // Queue pre-existing successful routes when this version is first opened.
   try{
     var oldRoutes=JSON.parse(localStorage.getItem(NAV_STORE)||'[]');
