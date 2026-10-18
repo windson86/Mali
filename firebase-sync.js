@@ -10,7 +10,11 @@
   catch (_) { uploaded = []; }
   if (!Array.isArray(uploaded)) uploaded = [];
   var synced = new Set(uploaded.filter(function (x) { return typeof x === 'string'; }));
-  var pending = new Map();
+  var pending = new Map(), feedbackPending = new Map();
+  var FB_STORE = 'mali-unlisted-color-feedback-v1', FB_SENT = 'mali-uploaded-unlisted-feedback-v1';
+  var feedbackSent = new Set();
+  try { const v=JSON.parse(localStorage.getItem(FB_SENT)||'[]');if(Array.isArray(v))feedbackSent=new Set(v); }
+  catch (_) {}
   var database = null, userId = null, sdk = null;
   var working = false, ready = false, error = '';
   var sentThisPage = 0;
@@ -19,15 +23,27 @@
     return l && /^[a-z0-9-]{8,55}$/.test(l.id || '') &&
       Array.isArray(l.rgb) && l.rgb.length === 3 &&
       l.rgb.every(function (v) { return Number.isInteger(v) && v >= 0 && v <= 255; }) &&
-      ['crvena','plava','zelena','žuta'].indexOf(l.label) !== -1 &&
+      typeof l.label === 'string' && l.label.length >= 2 && l.label.length <= 40 &&
       ['teaching','verification'].indexOf(l.source) !== -1 &&
       typeof l.created_at === 'string';
+  }
+  function safeFeedback(l) {
+    return l && /^[a-z0-9-]{8,55}$/.test(l.id||'') &&
+      Array.isArray(l.rgb) && l.rgb.length === 3 &&
+      l.rgb.every(function(v){return Number.isInteger(v)&&v>=0&&v<=255;}) &&
+      ['teaching','verification'].indexOf(l.source)!==-1 &&
+      typeof l.created_at==='string' && l.created_at.length>10 && l.created_at.length<=40;
+  }
+  function enqueueFeedbackMany(items) {
+    if(!configured || !Array.isArray(items))return;
+    items.forEach(function(f){if(safeFeedback(f)&&!feedbackSent.has(f.id))feedbackPending.set(f.id,f);});
+    void drain();
   }
   function message() {
     if (!configured) return 'Zajednička baza još nije povezana. Lekcije su sigurno spremljene na ovom uređaju.';
     if (error) return 'Lekcije su lokalno spremljene. Slanje čeka: ' + error;
     if (!ready) return 'Povezujem zajedničku bazu… Lekcije se zasad čuvaju lokalno.';
-    return pending.size ? 'Zajednička baza: ' + pending.size + ' lekcija čeka slanje.' :
+    return pending.size || feedbackPending.size ? 'Zajednička baza: ' + (pending.size+feedbackPending.size) + ' zapisa čeka slanje.' :
       'Zajednička baza povezana. Tvoje poslane lekcije spremljene su i na serveru.';
   }
   function enqueueMany(items) {
@@ -38,24 +54,26 @@
     void drain();
   }
   async function drain() {
-    if (!ready || working || !pending.size || sentThisPage >= 150) return;
+    if (!ready || working || (!pending.size && !feedbackPending.size) || sentThisPage >= 150) return;
     working = true;
     try {
-      while (pending.size && sentThisPage < 150) {
-        var lesson = pending.values().next().value;
+      while ((pending.size || feedbackPending.size) && sentThisPage < 150) {
+        var isFeedback=!pending.size;
+        var lesson = (isFeedback?feedbackPending:pending).values().next().value;
         try {
-          await sdk.set(sdk.ref(database, 'colorLessons/v1/' + userId + '/' + lesson.id), {
-            rgb: lesson.rgb,
-            label: lesson.label,
-            source: lesson.source,
-            created_at: lesson.created_at,
-            server_at: sdk.serverTimestamp()
-          });
-          synced.add(lesson.id);
-          pending.delete(lesson.id);
+          await sdk.set(sdk.ref(database, (isFeedback?'colorFeedback/v1/':'colorLessons/v1/') + userId + '/' + lesson.id),
+            isFeedback ? {rgb:lesson.rgb,source:lesson.source,created_at:lesson.created_at,
+              server_at:sdk.serverTimestamp()} :
+              {rgb:lesson.rgb,label:lesson.label,source:lesson.source,created_at:lesson.created_at,
+              server_at:sdk.serverTimestamp()});
+          if(isFeedback){
+            feedbackSent.add(lesson.id);feedbackPending.delete(lesson.id);
+            try{localStorage.setItem(FB_SENT,JSON.stringify(Array.from(feedbackSent).slice(-1000)));}catch(_){}
+          }else{
+            synced.add(lesson.id);pending.delete(lesson.id);
+            try{localStorage.setItem(KEY,JSON.stringify(Array.from(synced).slice(-1800)));}catch(_){}
+          }
           sentThisPage++;
-          try { localStorage.setItem(KEY, JSON.stringify(Array.from(synced).slice(-1800))); }
-          catch (_) { /* Still available in the same page; recheck next visit. */ }
           error = '';
         } catch (err) {
           error = 'povezivanje ili sigurnosna pravila';
@@ -65,7 +83,11 @@
       }
     } finally { working = false; }
   }
-  window.MaliCloud = { enqueueMany: enqueueMany, message: message };
+  window.MaliCloud = { enqueueMany: enqueueMany, enqueueFeedbackMany: enqueueFeedbackMany, message: message };
+  try {
+    const already=JSON.parse(localStorage.getItem(FB_STORE)||'[]');
+    if(Array.isArray(already))enqueueFeedbackMany(already);
+  }catch(_){} 
   if (!configured) return;
   (async function () {
     try {

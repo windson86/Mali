@@ -3,7 +3,9 @@
 (function () {
   'use strict';
   var STORAGE = 'mali-color-lessons-v1';
-  var LABELS = ['crvena', 'plava', 'zelena', 'žuta'];
+  var LABELS = ['crvena','plava','zelena','žuta'];
+  function activeLabels(){return window.MaliConfig?window.MaliConfig.activeColors().map(c=>c.name.toLocaleLowerCase('hr')):LABELS;}
+  function esc(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   var MAX_LESSONS = 1800;
   var brain = null;
   var brainInfo = 'Mozak još nije istreniran.';
@@ -25,7 +27,7 @@
     .then(function (response) { if (!response.ok) throw new Error('No model'); return response.json(); })
     .then(function (data) {
       if (data && data.trained === true && data.model && Array.isArray(data.classes) &&
-          LABELS.every(function (label, i) { return data.classes[i] === label; })) {
+          data.model.w1 && data.model.w1.length === 3 && Array.isArray(data.model.b1) && Array.isArray(data.model.b2) && data.model.w2 && data.model.w2.length === data.model.b1.length && data.model.b2.length === data.classes.length && data.classes.length > 0) {
         brain = data;
         brainInfo = 'Mozak ' + String(data.version || '1') + ' — naučen iz ljudskih lekcija.';
       }
@@ -36,29 +38,10 @@
   function validLesson(l) {
     return l && Array.isArray(l.rgb) && l.rgb.length === 3 &&
       l.rgb.every(function (x) { return Number.isInteger(x) && x >= 0 && x <= 255; }) &&
-      LABELS.indexOf(l.label) >= 0;
+      typeof l.label === 'string' && l.label.length >= 2 && l.label.length <= 40;
   }
   function rgbCss(rgb) { return 'rgb(' + rgb.join(',') + ')'; }
-  function randomRgb() {
-    /* Sample four visually clear hue families equally often.
-       These are generated teaching examples, NOT the model's answer key. */
-    var families = [
-      { center: 0, spread: 8 },
-      { center: 60, spread: 6, yellow: true },
-      { center: 127, spread: 12 },
-      { center: 222, spread: 12 }
-    ];
-    var chosen = families[Math.floor(Math.random() * families.length)];
-    var hue = (chosen.center + (Math.random() * 2 - 1) * chosen.spread + 360) % 360;
-    var sat = 0.78 + Math.random() * 0.17;
-    var light = chosen.yellow ? 0.52 + Math.random() * 0.09 : 0.45 + Math.random() * 0.13;
-    var a = sat * Math.min(light, 1 - light);
-    function channel(n) {
-      var k = (n + hue / 30) % 12;
-      return Math.round(255 * (light - a * Math.max(-1, Math.min(k - 3, 9 - k, 1))));
-    }
-    return [channel(0), channel(8), channel(4)];
-  }
+  function randomRgb(){return window.MaliConfig?window.MaliConfig.randomRgb():[238,24,24];}
   function newSample() {
     sample = randomRgb();
     recorded = false;
@@ -66,8 +49,8 @@
     if (ball) ball.setAttribute('fill', rgbCss(sample));
   }
   function labelButtons() {
-    return '<div class="school-grid">' + LABELS.map(function (label) {
-      return '<button type="button" class="action" data-color-label="' + label + '">' + label.charAt(0).toUpperCase() + label.slice(1) + '</button>';
+    return '<div class="school-grid">' + activeLabels().map(function (label) {
+      return '<button type="button" class="action" data-color-label="' + esc(label) + '">' + esc(label.charAt(0).toUpperCase() + label.slice(1)) + '</button>';
     }).join('') + '</div>';
   }
   function note() {
@@ -95,7 +78,7 @@
     if (!brain || !brain.model) return null;
     try {
       var m = brain.model;
-      if (m.w1.length !== 3 || m.b2.length !== 4) return null;
+      if (m.w1.length !== 3 || m.b2.length !== brain.classes.length) return null;
       var input = rgb.map(function (v) { return v / 127.5 - 1; });
       var hidden = m.b1.map(function (b, j) {
         return Math.tanh(b + input.reduce(function (sum, x, i) { return sum + x * m.w1[i][j]; }, 0));
@@ -104,7 +87,7 @@
         return b + hidden.reduce(function (sum, x, i) { return sum + x * m.w2[i][j]; }, 0);
       });
       var choice = scores.indexOf(Math.max.apply(null, scores));
-      return LABELS[choice] || null;
+      return brain.classes[choice] || null;
     } catch (err) { return null; }
   }
   function showSample(mode, correcting) {
@@ -125,13 +108,17 @@
       '<p>' + intro + '</p><div class="ball-preview school-preview" style="background:' + rgbCss(sample) + '"></div>' +
       '<p class="muted">' + hint + '</p>' + controls +
       '<div class="school-actions"><button class="action" type="button" data-school="skip">↻ Druga loptica</button>' +
-      '<button class="action" type="button" data-school="skip">🤷 Ne znam</button>' +
+      ((mode === 'teach' || !currentGuess || correction) &&
+        (!window.MaliConfig || window.MaliConfig.get().colors.allow_unlisted_feedback) ?
+        '<button class="action" type="button" data-school="unlisted">✕ Nijedna od ponuđenih</button>' : '') +
+      (!window.MaliConfig || window.MaliConfig.get().colors.allow_dont_know ?
+        '<button class="action" type="button" data-school="skip">🤷 Ne znam</button>' : '') +
       (correction ? '<button class="action" type="button" data-school="back-to-guess">← Ipak natrag</button>' : '') +
       '<button class="action" type="button" data-school="home">← Natrag</button></div>' +
       '<p id="lessonStatus" class="muted">' + lessons.length + ' spremljenih lekcija na ovom uređaju.</p>');
   }
   function save(label) {
-    if (recorded || !sample || LABELS.indexOf(label) < 0) return;
+    if (recorded || !sample || activeLabels().indexOf(label) < 0) return;
     if (lessons.length >= MAX_LESSONS) {
       ui('lessonStatus').textContent = 'Memorija je puna. Najprije izvezi lekcije.';
       return;
@@ -168,6 +155,23 @@
           sample === finishedSample) chooseMode(finishedMode);
     }, 650);
   }
+  function saveUnlisted() {
+    if(recorded || !sample)return;
+    const KEY='mali-unlisted-color-feedback-v1';
+    let rows=[];
+    try{const old=JSON.parse(localStorage.getItem(KEY)||'[]');if(Array.isArray(old))rows=old;}catch(_){}
+    const entry={
+      id:Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10),
+      rgb:sample.slice(),source:currentMode==='test'?'verification':'teaching',
+      created_at:new Date().toISOString()
+    };
+    rows.push(entry);rows=rows.slice(-300);
+    try{localStorage.setItem(KEY,JSON.stringify(rows));}
+    catch(err){if(ui('lessonStatus'))ui('lessonStatus').textContent='Ne mogu spremiti povratnu informaciju.';return;}
+    if(window.MaliCloud)window.MaliCloud.enqueueFeedbackMany([entry]);
+    // Not a teaching label and no XP. Never train the model on an unlisted RGB.
+    chooseMode(currentMode);
+  }
   function download() {
     if (!lessons.length) {
       ui('modalContent').insertAdjacentHTML('beforeend', '<p class="muted">Najprije nauči Malog barem jednu boju.</p>');
@@ -185,7 +189,7 @@
   }
   window.MaliColors = {
     randomRgb: randomRgb,
-    open: function (ctx) { context = ctx; showHome(); },
+    open: function (ctx) { context = ctx; if(window.MaliConfig)void window.MaliConfig.refresh(false);showHome(); },
     handleClick: function (event) {
       var labelButton = event.target.closest('[data-color-label]');
       if (labelButton) { save(labelButton.getAttribute('data-color-label')); return; }
@@ -196,6 +200,7 @@
       else if (action === 'agree' && currentMode === 'test' && currentGuess) save(currentGuess);
       else if (action === 'correct' && currentMode === 'test' && currentGuess && !recorded) showSample('test', true);
       else if (action === 'back-to-guess' && currentMode === 'test' && currentGuess) showSample('test', false);
+      else if (action === 'unlisted') saveUnlisted();
       else if (action === 'skip') chooseMode(currentMode);
       else if (action === 'home') showHome();
       else if (action === 'export') download();

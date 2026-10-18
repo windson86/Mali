@@ -69,3 +69,15 @@ Privremena web adresa: https://malipesek.netlify.app . Domena `mali.com.hr` bit 
 - Kad je **stvarno istreniran model** objavljen u `brain/active.json`, način **Pokaži što znaš** prvo pokazuje Malijevu pretpostavku. **Bravo!** prihvaća pretpostavku, a **Nije, nego…** otvara četiri ljudske oznake za ispravak; obje spremaju jednu potvrđenu lekciju (`source: verification`) u postojeću lokalnu pohranu i Firebase kad je dostupan, pa automatski slijedi nova loptica.
 - **Ne znam** i **Druga loptica** preskaču uzorak bez XP-a i bez spremanja. Dok je model neistreniran, škola boja ostaje u režimu ljudskog podučavanja, bez lažne pretpostavke i bez gumba Bravo.
 - Model se **ne trenira u Netlifyju**; mora nastati na korisničkom laptopu. Trenutna `brain/active.json` ima `trained: false`; nemoj je zamijeniti lažnim podacima ili administratorskim Firebase ključem. U GitHub javno ide samo trenirani `brain/active.json`, nikako service-account JSON.
+
+
+## Firebase Control Center → Netlify (konfiguracija revizije 1+)
+
+- Lokalna konzola `MALI Control Center` piše konfiguraciju na `gameConfig/public` i čuva stare verzije pod `adminHistory/config`. Admin SDK ključ **ostaje isključivo na laptopu**.
+- `game-config.js` na Netlifyju javno čita samo `gameConfig/public`. Provjerava strukturu (`schema_version:1`, boje i labirint), pamti posljednju valjanu verziju u pregledniku i koristi sigurne zadane postavke kada Firebase nije dostupan.
+- **Jednokratan ručni korak u Firebase Console → Realtime Database → Rules:** zalijepiti i objaviti cijelu datoteku `firebase.rules.json` iz GitHuba. Do te objave pristup javnoj konfiguraciji bit će odbijen; igra će nastaviti koristiti zadane ili zadnje uspješno spremljene postavke.
+- Pravila omogućuju čitanje **samo** `gameConfig/public`, ostavljaju `adminHistory` privatnim te i dalje ograničavaju korisničke upise na vlastiti anonimni Firebase UID.
+- Konzola može promijeniti nijanse, učestalost, uključene boje, veličinu labirinta (8×8, 12×12, 16×16), postotak prepreka (5–30%), domet vida (1–5 polja) te 1–3 loptice. Svaki generirani labirint provjerava prohodnost za sve ciljeve, redom.
+- Web podržava dinamički popis oznaka boja. **„Nijedna od ponuđenih”** bilježi RGB kao `colorFeedback/v1/${uid}/${id}`, zasebno od lekcija za treniranje. „Ne znam” samo preskače. Za promjenu broja klasa mora se nadograditi i Python trener te objaviti kompatibilan naučeni model.
+- Trenutno `brain/active.json` i dalje dolazi s Netlifyja: objava novog mozga kroz lokalnu konzolu/Firebase slijedi u zasebnom koraku.
+- Za promjene koje web već zna obraditi ne treba novi deploy: igra povremeno osvježava postavke; promjene labirinta primjenjuju se pri izradi sljedeće mape nakon uspješnog osvježenja. Osvježi stranicu želiš li odmah učitati posljednju reviziju.

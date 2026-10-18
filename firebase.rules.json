@@ -25,7 +25,51 @@
               }
             },
             "label": {
-              ".validate": "newData.isString() && (newData.val() === 'crvena' || newData.val() === 'plava' || newData.val() === 'zelena' || newData.val() === 'žuta')"
+              ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 40"
+            },
+            "source": {
+              ".validate": "newData.isString() && (newData.val() === 'teaching' || newData.val() === 'verification')"
+            },
+            "created_at": {
+              ".validate": "newData.isString() && newData.val().length > 10 && newData.val().length <= 40"
+            },
+            "server_at": {
+              ".validate": "newData.isNumber() && newData.val() <= now && newData.val() > 0"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      }
+    },
+    "gameConfig": {
+      "public": {
+        ".read": true,
+        ".write": false
+      }
+    },
+    "colorFeedback": {
+      "v1": {
+        "$uid": {
+          ".read": "auth != null && auth.uid === $uid",
+          "$feedbackId": {
+            ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.exists()",
+            ".validate": "newData.hasChildren(['rgb', 'source', 'created_at', 'server_at'])",
+            "rgb": {
+              "0": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 255 && newData.val() % 1 === 0"
+              },
+              "1": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 255 && newData.val() % 1 === 0"
+              },
+              "2": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 255 && newData.val() % 1 === 0"
+              },
+              ".validate": "newData.hasChildren(['0', '1', '2'])",
+              "$other": {
+                ".validate": false
+              }
             },
             "source": {
               ".validate": "newData.isString() && (newData.val() === 'teaching' || newData.val() === 'verification')"
