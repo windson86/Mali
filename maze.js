@@ -189,15 +189,19 @@
     }
     return out;
   }
-  function controlsHtml(){
-    if(world.helpPending)return '<div class="ml-result">🐶 Zapetljao sam se. Trebam tvoju pomoć!</div>'+
-      '<div class="ml-actions"><button class="action" type="button" data-ml-action="help">🐾 Pomozi mi</button></div>';
-    if(world.autoRunning)return '<div class="ml-result">🧠 Mali pokušava sam. Možeš ga zaustaviti.</div>';
+  function arrowControlsHtml(){
     return '<div class="ml-controls">'+
       '<span></span><button class="action" type="button" data-ml-dir="up" aria-label="Gore">↑</button><span></span>'+
       '<button class="action" type="button" data-ml-dir="left" aria-label="Lijevo">←</button>'+
       '<button class="action" type="button" data-ml-dir="down" aria-label="Dolje">↓</button>'+
       '<button class="action" type="button" data-ml-dir="right" aria-label="Desno">→</button></div>';
+  }
+  function controlsHtml(){
+    if(world.helpPending)return '<div class="ml-result">🐶 Zapetljao sam se. Trebam tvoju pomoć! Klikni Pomozi mi ili odmah koristi strelice.</div>'+
+      arrowControlsHtml()+
+      '<div class="ml-actions"><button class="action" type="button" data-ml-action="help">🐾 Pomozi mi</button></div>';
+    if(world.autoRunning)return '<div class="ml-result">🧠 Mali pokušava sam. Možeš ga zaustaviti.</div>';
+    return arrowControlsHtml();
   }
   function resultHtml(){
     return '<div class="ml-result">🎉 Sve loptice skupljene! Tvoj put: '+world.moves+' koraka. Najkraći mogući: '+world.optimal+
@@ -215,7 +219,7 @@
       '<button id="ml-auto" class="action" type="button" data-ml-action="auto">🧠 Probaj sam</button>'+
       '<button id="ml-stop" class="action" type="button" data-ml-action="stop">⏹ Zaustavi</button>'+
       '<button id="ml-export" class="action" type="button" data-ml-action="export">⬇ Izvezi rute ('+saved.length+')</button></div>'+
-      '<p class="muted ml-footnote">Konfiguracija rev. '+window.MaliConfig.revision()+' ('+window.MaliConfig.source()+') · '+N+'×'+N+'. Mali još ne hoda sam.</p>'+
+      '<p class="muted ml-footnote">Konfiguracija rev. '+window.MaliConfig.revision()+' ('+window.MaliConfig.source()+') · '+N+'×'+N+'. Samostalni pokušaji koriste objavljeni navigacijski model.</p>'+
       '<p id="ml-cloud-status" class="muted ml-footnote">'+
         (window.MaliCloud && window.MaliCloud.navigationMessage
           ? window.MaliCloud.navigationMessage()
@@ -262,8 +266,11 @@
     ctx.persist();ctx.render();ctx.speak('Bravo! 🐾','+8 XP. Tvoja ruta je zabilježena.');
   }
   function move(direction,byAuto){
-    if(!world||world.done||!DIR[direction]||world.helpPending)return;
+    if(!world||world.done||!DIR[direction])return;
     if(world.autoRunning&&!byAuto)return;
+    // A manual arrow press is also an explicit takeover when Mali asks for help.
+    if(world.helpPending&&!byAuto)beginHelp();
+    if(world.helpPending)return;
     if(byAuto)world.usedAuto=true;
     const [dx,dy]=DIR[direction],from=world.dog.slice(),x=from[0]+dx,y=from[1]+dy;
     const blocked=x<0||y<0||x>=N||y>=N||world.walls.has(pos(x,y));
