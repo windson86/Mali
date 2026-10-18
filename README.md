@@ -50,3 +50,13 @@ Privremena web adresa: https://malipesek.netlify.app . Domena `mali.com.hr` bit 
 - Datoteke `firebase-config.js`, `firebase-sync.js`, `firebase.rules.json`, `tools/export_firebase_lessons.py` pripremaju zajedničku bazu.
 - **Cloud upis je trenutno isključen** dok se ne postavi zaseban Firebase projekt, Anonymous Auth i pravila; postojeće lekcije ostaju lokalno.
 - Upute: [FIREBASE_SETUP.md](FIREBASE_SETUP.md).
+
+## Labirint 8 × 8 — učenje kretanja
+
+- Klikom na **Labirint 🧩** otvara se mreža 8 × 8 s jednom lopticom i 8–9 nasumičnih blokiranih polja (12,5–14,1%).
+- Svaki labirint ima prohodan put do loptice; algoritam provjerava prohodnost, ali **ne vodi Malog**.
+- Mali prepoznaje prepreke najviše dva polja udaljenosti (po mrežnoj udaljenosti), uključujući iza drugih prepreka, i pamti otkrivene prepreke tijekom pokušaja.
+- **Korisnik vodi Malog** strelicama na ekranu ili tipkovnici. Bilježe se koraci, neuspjeli pokušaji i ono što je Mali znao u trenutku poteza.
+- Na cilju se ljudska ruta sprema u **localStorage** i može se preuzeti gumbom **Izvezi rute** (JSON, `mali-navigation-lessons-v1`).
+- Rute **još ne idu u Firebase** i Python **još ne trenira navigaciju**; povezivanje s bazom i učenje prostora slijede kasnije. Postojeća škola boja nije mijenjana.
+- Dok Mali spava ne može započeti labirint. Dovršena ruta donosi +8 XP; najkraći put prikazuje se tek na kraju kao usporedba.
