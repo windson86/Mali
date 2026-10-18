@@ -141,28 +141,52 @@
   }
   function createWorld(){
     const cfg=window.MaliConfig.get().maze;
-    N=cfg.size;START=[0,N-1];GOAL=[N-1,0];
+    N=cfg.size;START=[0,N-1];
+    // Every ball, including number 1, now gets a fresh random location.
+    // Keep Mali's starting square fixed so we change only one training variable.
     const options=[];
-    for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(pos(x,y)!==pos(...START)&&pos(x,y)!==pos(...GOAL))options.push([x,y]);
+    for(let y=0;y<N;y++)for(let x=0;x<N;x++)
+      if(pos(x,y)!==pos(...START))options.push([x,y]);
+    let fallbackGoals=null;
     for(let t=0;t<500;t++){
       const bag=options.slice();
-      for(let i=bag.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[bag[i],bag[j]]=[bag[j],bag[i]];}
-      const goals=[GOAL.slice()];
+      for(let i=bag.length-1;i>0;i--){
+        const j=Math.floor(Math.random()*(i+1));
+        [bag[i],bag[j]]=[bag[j],bag[i]];
+      }
+      const goals=[];
       for(const p of bag){
+        if(Math.abs(p[0]-START[0])+Math.abs(p[1]-START[1])<3)continue;
+        if(goals.every(g=>Math.abs(g[0]-p[0])+Math.abs(g[1]-p[1])>=3))
+          goals.push(p);
         if(goals.length===cfg.ball_count)break;
-        if(goals.every(g=>Math.abs(g[0]-p[0])+Math.abs(g[1]-p[1])>=3)&&Math.abs(p[0]-START[0])+Math.abs(p[1]-START[1])>=3)goals.push(p);
       }
       if(goals.length!==cfg.ball_count)continue;
+      fallbackGoals=goals.map(p=>p.slice());
       const reserved=new Set([pos(...START),...goals.map(g=>pos(...g))]);
-      const walls=new Set(bag.filter(p=>!reserved.has(pos(...p))).slice(0,Math.round(N*N*cfg.blocked_percent/100)).map(p=>pos(...p)));
+      const walls=new Set(bag.filter(p=>!reserved.has(pos(...p)))
+        .slice(0,Math.round(N*N*cfg.blocked_percent/100)).map(p=>pos(...p)));
       let previous=START.slice(),optimal=0,ok=true;
-      for(const target of goals){const steps=shortestFrom(walls,previous,target);if(steps===null){ok=false;break;}optimal+=steps;previous=target;}
-      if(ok)return {walls,optimal,goals,cfg};
+      for(const target of goals){
+        const steps=shortestFrom(walls,previous,target);
+        if(steps===null){ok=false;break;}
+        optimal+=steps;previous=target;
+      }
+      if(ok){
+        GOAL=goals[0].slice(); // Legacy route export records the actual first goal.
+        return {walls,optimal,goals,cfg};
+      }
     }
-    const goals=[GOAL.slice(),...[[N-1,N-1],[Math.floor(N/2),Math.floor(N/2)]].slice(0,cfg.ball_count-1)];
-    let prev=START.slice(),optimal=0;
-    for(const p of goals){optimal+=Math.abs(p[0]-prev[0])+Math.abs(p[1]-prev[1]);prev=p;}
-    return {walls:new Set(),optimal,goals,cfg};
+    // If obstacle placement repeatedly blocks paths, keep random goals but
+    // remove walls. Never silently revert to a fixed corner goal.
+    if(!fallbackGoals)throw Error('Nije moguće rasporediti loptice.');
+    GOAL=fallbackGoals[0].slice();
+    let previous=START.slice(),optimal=0;
+    for(const p of fallbackGoals){
+      optimal+=Math.abs(p[0]-previous[0])+Math.abs(p[1]-previous[1]);
+      previous=p;
+    }
+    return {walls:new Set(),optimal,goals:fallbackGoals,cfg};
   }
   function reveal(){
     for(const wall of world.walls){
@@ -216,7 +240,7 @@
       '<p class="ml-help">Skupljaj loptice redom <b>1 → '+world.goals.length+'</b>. Prepreke vidi do <b>'+world.cfg.vision_radius+' polja</b>.</p>'+
       '<div id="ml-board" class="ml-board" role="grid" style="--ml-size:'+N+';--ml-font:'+(N===16?11:N===12?15:23)+'px" aria-label="Labirint '+N+' puta '+N+'">'+cells()+'</div>'+
       '<div id="ml-stats" class="ml-stats">Koraci: <b>'+world.moves+'</b> · Otkriveno: <b>'+world.known.size+'/'+world.walls.size+'</b> · Udarci: <b>'+world.hits+'</b></div>'+
-      '<div id="ml-message" class="ml-message" role="status">'+(message||'Loptica je gore desno. Vodi me strelicama!')+'</div>'+
+      '<div id="ml-message" class="ml-message" role="status">'+(message||'Pronađi lopticu broj 1. Vodi me strelicama!')+'</div>'+
       '<div id="ml-controlslot">'+(world.done?resultHtml():controlsHtml())+'</div>'+
       '<div class="ml-actions"><button class="action" type="button" data-ml-action="new">↻ Novi labirint</button>'+
       '<button id="ml-auto" class="action" type="button" data-ml-action="auto">🧠 Probaj sam</button>'+
