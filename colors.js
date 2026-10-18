@@ -10,6 +10,7 @@
   var lessons = [];
   var sample = null;
   var recorded = false;
+  var currentGuess = null;
   var currentMode = 'home';
   var context = null;
   var ui = function (id) { return document.getElementById(id); };
@@ -70,7 +71,7 @@
     }).join('') + '</div>';
   }
   function note() {
-    return '<p class="muted">' + lessons.length + ' lekcija na ovom uređaju. Još se ne šalju drugim korisnicima.</p>';
+    return '<p class="muted">' + lessons.length + ' lekcija na ovom uređaju. Kada je Firebase dostupan, lekcije se šalju u zajedničku bazu.</p>';
   }
   function openModal(screen, title, body) {
     currentMode = screen;
@@ -106,19 +107,27 @@
       return LABELS[choice] || null;
     } catch (err) { return null; }
   }
-  function showSample(mode) {
+  function showSample(mode, correcting) {
     currentMode = mode;
-    var guess = mode === 'test' ? predict(sample) : null;
-    var intro = mode === 'teach'
-      ? 'Pogledaj lopticu i reci Malom koju boju vidiš.'
-      : (guess ? 'Mali misli da je ovo <strong>' + guess + '</strong>. Potvrdi ili ga ispravi.'
-        : 'Još ne znam odgovor. Možeš me naučiti?');
+    currentGuess = mode === 'test' ? predict(sample) : null;
+    var correction = !!correcting && !!currentGuess;
+    var intro = mode === 'teach' ? 'Pogledaj lopticu i reci Malom koju boju vidiš.' :
+      !currentGuess ? 'Još nemam objavljeni naučeni mozak. Možeš me naučiti koju boju vidiš?' :
+      correction ? 'Hvala što me ispravljaš! Koja je prava boja loptice?' :
+      '🐶 Mislim da je ovo <strong>' + currentGuess + '</strong>. Jesam li pogodio?';
+    var controls = mode === 'test' && currentGuess && !correction
+      ? '<div class="school-actions"><button class="action" type="button" data-school="agree">✓ Bravo!</button>' +
+        '<button class="action" type="button" data-school="correct">✎ Nije, nego…</button></div>'
+      : labelButtons();
+    var hint = correction ? 'Odaberi pravu boju. Zabilježit ću tvoj ispravak.' :
+      '„Ne znam” i „Druga loptica” preskaču bez spremanja lekcije.';
     openModal(mode, mode === 'teach' ? 'Uči me bojama 🎨' : 'Pokaži što znaš 🐶',
       '<p>' + intro + '</p><div class="ball-preview school-preview" style="background:' + rgbCss(sample) + '"></div>' +
-      '<p class="muted">Boju određuje korisnik, ne program. „Ne znam” i „Druga loptica” preskaču primjer bez spremanja.</p>' +
-      labelButtons() + '<div class="school-actions"><button class="action" data-school="skip">↻ Druga loptica</button>' +
-      '<button class="action" data-school="skip">🤷 Ne znam</button>' +
-      '<button class="action" data-school="home">← Natrag</button></div>' +
+      '<p class="muted">' + hint + '</p>' + controls +
+      '<div class="school-actions"><button class="action" type="button" data-school="skip">↻ Druga loptica</button>' +
+      '<button class="action" type="button" data-school="skip">🤷 Ne znam</button>' +
+      (correction ? '<button class="action" type="button" data-school="back-to-guess">← Ipak natrag</button>' : '') +
+      '<button class="action" type="button" data-school="home">← Natrag</button></div>' +
       '<p id="lessonStatus" class="muted">' + lessons.length + ' spremljenih lekcija na ovom uređaju.</p>');
   }
   function save(label) {
@@ -129,7 +138,7 @@
     }
     var entry = {
       id: Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10),
-      rgb: sample.slice(), label: label, source: currentMode === 'test' ? 'verification' : 'teaching',
+      rgb: sample.slice(), label: label, source: currentMode === 'test' && currentGuess ? 'verification' : 'teaching',
       created_at: new Date().toISOString()
     };
     lessons.push(entry);
@@ -140,14 +149,14 @@
       return;
     }
     recorded = true;
-    var buttons = document.querySelectorAll('[data-color-label]');
+    var buttons = document.querySelectorAll('[data-color-label],[data-school="agree"],[data-school="correct"]');
     buttons.forEach(function (b) { b.disabled = true; });
     if (context) {
       context.s.lessons = (context.s.lessons || 0) + 1;
       context.s.xp = (context.s.xp || 0) + 1;
       context.persist();
       context.render();
-      context.speak('Hvala! 🐾', 'Lekcija spremljena samo na ovom uređaju.');
+      context.speak('Hvala! 🐾', 'Lekcija spremljena lokalno; Firebase sinkronizira kad je dostupan.');
     }
     ui('lessonStatus').textContent = 'Spremljeno: ' + label + '! Ukupno ' + lessons.length + ' lekcija. Stiže nova loptica…';
     // The same lesson remains safely in localStorage even when the database is offline.
@@ -175,6 +184,7 @@
     setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
   }
   window.MaliColors = {
+    randomRgb: randomRgb,
     open: function (ctx) { context = ctx; showHome(); },
     handleClick: function (event) {
       var labelButton = event.target.closest('[data-color-label]');
@@ -183,6 +193,9 @@
       if (!control) return;
       var action = control.getAttribute('data-school');
       if (action === 'teach' || action === 'test') chooseMode(action);
+      else if (action === 'agree' && currentMode === 'test' && currentGuess) save(currentGuess);
+      else if (action === 'correct' && currentMode === 'test' && currentGuess && !recorded) showSample('test', true);
+      else if (action === 'back-to-guess' && currentMode === 'test' && currentGuess) showSample('test', false);
       else if (action === 'skip') chooseMode(currentMode);
       else if (action === 'home') showHome();
       else if (action === 'export') download();

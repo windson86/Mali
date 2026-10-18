@@ -60,3 +60,12 @@ Privremena web adresa: https://malipesek.netlify.app . Domena `mali.com.hr` bit 
 - Na cilju se ljudska ruta sprema u **localStorage** i može se preuzeti gumbom **Izvezi rute** (JSON, `mali-navigation-lessons-v1`).
 - Rute **još ne idu u Firebase** i Python **još ne trenira navigaciju**; povezivanje s bazom i učenje prostora slijede kasnije. Postojeća škola boja nije mijenjana.
 - Dok Mali spava ne može započeti labirint. Dovršena ruta donosi +8 XP; najkraći put prikazuje se tek na kraju kao usporedba.
+
+## Stabilizacija sučelja, kalendarski dani i provjera naučenih boja
+
+- **DAN** se računa po lokalnim kalendarskim datumima od izvornog `born` trenutka u `localStorage`, bez poništavanja starog napretka. Svaki preglednik ima zaseban napredak do buduće prijave korisnika.
+- Labirint je 8 × 8 s 8 ili 9 blokiranih polja. Polja imaju 8 fiksnih redaka i stupaca; tijekom kretanja mijenja se samo prikaz polja, bez ponovnog otvaranja modalnog prozora.
+- Umjesto emojija teniske loptice, cilj labirinta je obična obojena kružna loptica iz **istog RGB generatora** koji koristi učenje boja. Boja je spremljena kao `ball_rgb` u lokalnoj, izvezenoj ruti. U labirintu se još ne prepoznaje boja niti radi autonomna navigacija.
+- Kad je **stvarno istreniran model** objavljen u `brain/active.json`, način **Pokaži što znaš** prvo pokazuje Malijevu pretpostavku. **Bravo!** prihvaća pretpostavku, a **Nije, nego…** otvara četiri ljudske oznake za ispravak; obje spremaju jednu potvrđenu lekciju (`source: verification`) u postojeću lokalnu pohranu i Firebase kad je dostupan, pa automatski slijedi nova loptica.
+- **Ne znam** i **Druga loptica** preskaču uzorak bez XP-a i bez spremanja. Dok je model neistreniran, škola boja ostaje u režimu ljudskog podučavanja, bez lažne pretpostavke i bez gumba Bravo.
+- Model se **ne trenira u Netlifyju**; mora nastati na korisničkom laptopu. Trenutna `brain/active.json` ima `trained: false`; nemoj je zamijeniti lažnim podacima ili administratorskim Firebase ključem. U GitHub javno ide samo trenirani `brain/active.json`, nikako service-account JSON.
