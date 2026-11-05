@@ -407,6 +407,47 @@
           }
         }
       }
+    },
+    "teacherProfiles": {
+      "v1": {
+        ".read": true,
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid && newData.exists()",
+          ".validate": "newData.hasChildren(['nickname','updated_at'])",
+          "nickname": {
+            ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_čćđšžČĆĐŠŽ-]{3,20}$/)"
+          },
+          "updated_at": {
+            ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= now"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    },
+    "teacherCredits": {
+      "v1": {
+        ".read": true,
+        "$uid": {
+          "$creditId": {
+            ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.exists() && ((newData.child('kind').val() === 'color' && newData.child('points').val() === 5 && $creditId.matches(/^[a-z0-9-]{8,55}$/) && root.child('colorLessons/v1/' + $uid + '/' + $creditId).exists()) || (newData.child('kind').val() === 'route' && newData.child('points').val() === 10 && $creditId.matches(/^maze-[a-z0-9-]{12,60}$/) && root.child('navigationLessons/v1/' + $uid + '/' + $creditId).exists()) || (newData.child('kind').val() === 'help' && newData.child('points').val() === 30 && $creditId.matches(/^loop-[a-z0-9-]{12,60}$/) && root.child('navigationCorrections/v1/' + $uid + '/' + $creditId).exists()))",
+            ".validate": "newData.hasChildren(['kind','points','created_at'])",
+            "kind": {
+              ".validate": "newData.isString() && (newData.val() === 'color' || newData.val() === 'route' || newData.val() === 'help')"
+            },
+            "points": {
+              ".validate": "newData.isNumber() && (newData.val() === 5 || newData.val() === 10 || newData.val() === 30)"
+            },
+            "created_at": {
+              ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= now"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      }
     }
   }
 }

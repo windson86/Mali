@@ -1,0 +1,17 @@
+/* Malijevi učitelji — small modal, independent of the maze overlay. */
+#ml-teachers-button{position:fixed;z-index:35;right:10px;top:88px;border:2px solid #353037;background:#fff4b7;color:#353037;padding:7px 10px;border-radius:12px;font-weight:800;box-shadow:2px 3px #353037;cursor:pointer;font-size:13px}
+#ml-teachers-cover[hidden]{display:none}
+#ml-teachers-cover{position:fixed;z-index:1000;inset:0;background:#161e22bc;display:grid;place-items:center;padding:14px}
+.ml-teachers-card{width:min(100%,420px);max-height:min(88vh,700px);overflow:auto;background:#fff9eb;color:#353037;padding:16px;border:3px solid #353037;border-radius:16px;box-shadow:4px 6px 0 #171717}
+.ml-teachers-head{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:20px}
+.ml-teachers-card button{background:#e4f1e0;color:#353037;border:2px solid #353037;padding:7px 10px;border-radius:9px;font-weight:700;cursor:pointer}
+.ml-teachers-card button.ml-t-primary{background:#aee5ac}
+.ml-teachers-card input{display:block;width:100%;box-sizing:border-box;margin:6px 0;padding:11px;border:2px solid #353037;border-radius:8px;font-size:16px;background:white;color:#222}
+.ml-t-note{color:#5a5a5a;font-size:12px;line-height:1.45}
+.ml-t-tabs{display:flex;gap:5px;margin-top:14px}
+.ml-t-tabs button{flex:1}
+.ml-t-tabs button[aria-pressed="true"]{background:#aee5ac}
+.ml-t-ranking{list-style:none;margin:12px 0;padding:0;max-height:310px;overflow:auto}
+.ml-t-ranking li{display:grid;grid-template-columns:34px 1fr auto;gap:8px;align-items:center;padding:10px 5px;border-bottom:1px solid #b0b0b0;font-size:14px}
+.ml-t-rank{font-weight:900}
+@media(max-width:450px){#ml-teachers-button{top:73px;right:8px;font-size:11px;padding:5px 7px}.ml-teachers-card{padding:12px}}

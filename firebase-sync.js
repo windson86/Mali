@@ -79,6 +79,10 @@
     void drain();return true;
   }
   var database = null, userId = null, sdk = null;
+  // A single anonymous Firebase identity must be shared by lessons and teacher XP.
+  // Calling signInAnonymously twice concurrently can create different users.
+  var identityResolve;
+  var identityReady = new Promise(resolve => { identityResolve=resolve; });
   var working = false, ready = false, error = '';
   var sentThisPage = 0;
   var configured = !!(cfg && cfg.apiKey && cfg.authDomain && cfg.projectId && cfg.appId && cfg.databaseURL);
@@ -231,6 +235,14 @@
             synced.add(lesson.id);pending.delete(lesson.id);
             try{localStorage.setItem(KEY,JSON.stringify(Array.from(synced).slice(-1800)));}catch(_){}
           }
+          // Credit only lessons acknowledged by Firebase. The teacher board
+          // applies a create-only receipt, so retries cannot double count.
+          if(window.MaliTeachers && (isNavigation||isCorrection||(!isIncident&&!isFeedback))){
+            window.MaliTeachers.credit(
+              isNavigation?'route':isCorrection?'help':'color',
+              isNavigation?routeId:lesson.id
+            );
+          }
           sentThisPage++;
           error = '';
         } catch (err) {
@@ -248,7 +260,8 @@
     enqueueFeedbackMany:enqueueFeedbackMany,
     enqueueNavigationMany:enqueueNavigationMany,
     navigationMessage:navigationMessage,
-    message:message
+    message:message,
+    whenReady:function(){return identityReady;}
   };
   for(const item of readArray(INCIDENT_STORE)){if(acceptableIncident(item)&&!incidentSent.has(item.id))incidentQueue.set(item.id,item);}
   for(const item of readArray(FIX_STORE)){if(acceptableCorrection(item)&&!correctionSent.has(item.id))correctionQueue.set(item.id,item);}
@@ -261,7 +274,7 @@
     const already=JSON.parse(localStorage.getItem(FB_STORE)||'[]');
     if(Array.isArray(already))enqueueFeedbackMany(already);
   }catch(_){} 
-  if (!configured) return;
+  if (!configured) { identityResolve(null); return; }
   (async function () {
     try {
       // CDN modules load ONLY when the user explicitly connects a Firebase project.
@@ -278,8 +291,10 @@
       database = modules[2].getDatabase(app);
       sdk = modules[2];
       ready = true;
+      identityResolve({database:database,sdk:sdk,userId:userId});
       await drain();
     } catch (err) {
+      identityResolve(null);
       error = 'provjeri Firebase konfiguraciju i Anonymous Authentication';
       console.warn('Mali: zajednička baza nije dostupna. Lekcije ostaju lokalno.', err);
     }
