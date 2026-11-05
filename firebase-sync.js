@@ -231,6 +231,14 @@
             synced.add(lesson.id);pending.delete(lesson.id);
             try{localStorage.setItem(KEY,JSON.stringify(Array.from(synced).slice(-1800)));}catch(_){}
           }
+          // Credit only lessons acknowledged by Firebase. The teacher board
+          // applies a create-only receipt, so retries cannot double count.
+          if(window.MaliTeachers && (isNavigation||isCorrection||(!isIncident&&!isFeedback))){
+            window.MaliTeachers.credit(
+              isNavigation?'route':isCorrection?'help':'color',
+              isNavigation?routeId:lesson.id
+            );
+          }
           sentThisPage++;
           error = '';
         } catch (err) {
