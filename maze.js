@@ -293,7 +293,7 @@
     if(!ctx)return;
     ctx.open('maze','Malijev labirint 🐶',
       '<p class="ml-help">Skupljaj loptice redom <b>1 → '+world.goals.length+'</b>. Prepreke vidi do <b>'+world.cfg.vision_radius+' polja</b>. Na mobitelu povuci prst za jedan korak.</p>'+
-      '<div id="ml-board" class="ml-board" role="grid" style="--ml-size:'+N+';--ml-font:'+(N===16?11:N===12?15:23)+'px" aria-label="Labirint '+N+' puta '+N+'">'+cells()+'</div>'+
+      '<div id="ml-board" class="ml-board" role="grid" style="--ml-size:'+N+';--ml-font:'+(N===16?11:N===12?15:23)+'px;touch-action:none" aria-label="Labirint '+N+' puta '+N+'">'+cells()+'</div>'+
       '<div id="ml-stats" class="ml-stats">Koraci: <b>'+world.moves+'</b> · Otkriveno: <b>'+world.known.size+'/'+world.walls.size+'</b> · Udarci: <b>'+world.hits+'</b></div>'+
       '<div id="ml-message" class="ml-message" style="min-height:4.5em;line-height:1.5" role="status">'+(message||'Pronađi lopticu broj 1. Vodi me strelicama ili prstom!')+'</div>'+
       '<div id="ml-controlslot">'+(world.done?resultHtml():controlsHtml())+'</div>'+
