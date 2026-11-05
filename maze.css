@@ -32,7 +32,7 @@
 
 /* Paw trails: previous visits are visible, but never block returning from a dead end. */
 .ml-cell{position:relative}
-.ml-paw{position:absolute;right:3%;bottom:3%;font-size:clamp(8px,calc(var(--ml-font,23px)*.58),14px);line-height:1;pointer-events:none;filter:grayscale(1)}
+.ml-paw{position:absolute;right:3%;bottom:3%;font-size:clamp(8px,.58em,14px);line-height:1;pointer-events:none;filter:grayscale(1)}
 .ml-paw-1{opacity:.20}
 .ml-paw-2{opacity:.40}
 .ml-paw-3{opacity:.65}
