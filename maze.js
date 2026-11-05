@@ -243,9 +243,14 @@
       '<button class="action" type="button" data-ml-dir="right" aria-label="Desno">→</button></div>';
   }
   function controlsHtml(){
-    if(world.helpPending)return '<div class="ml-result">🐶 Zapetljao sam se. Trebam tvoju pomoć! Klikni Pomozi mi ili odmah koristi strelice.</div>'+
+    // Keep this entire help region the same size when the first arrow starts
+    // a correction. Previously the banner and action disappeared and moved the
+    // arrow pad under the user's finger.
+    if(world.helpPending||world.helpActive)return '<div class="ml-result ml-help-banner">🐶 Zapetljao sam se. Trebam tvoju pomoć! Vodi me strelicama do loptice.</div>'+
       arrowControlsHtml()+
-      '<div class="ml-actions"><button class="action" type="button" data-ml-action="help">🐾 Pomozi mi</button></div>';
+      '<div class="ml-actions ml-help-actions"><button class="action" type="button" data-ml-action="help"'+
+      (world.helpActive?' disabled aria-disabled="true"':'')+'>'+
+      (world.helpActive?'🐾 Pomažeš mi':'🐾 Pomozi mi')+'</button></div>';
     if(world.autoRequested||world.autoRunning)return '<div class="ml-result">🧠 Mali traži sam. Strelice su zaključane dok ne zatraži pomoć; Zaustavi prekida bez XP-a.</div>';
     return arrowControlsHtml();
   }
