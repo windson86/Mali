@@ -56,8 +56,15 @@
         known:world.known,visits:world.visits,previous:world.previous,
         target_index:world.targetIndex});
     }catch(e){stopAuto();controlsState();update('Model nije spreman za hodanje.');return;}
-    const ranked=[0,1,2,3].sort((a,b)=>probs[b]-probs[a]);
     const directions=['up','down','left','right'];
+    // Soft penalty: a previously visited square is less attractive, never forbidden.
+    // Mali still chooses from the neural network's probabilities and known open paths.
+    const score=i=>{
+      const [dx,dy]=DIR[directions[i]],key=pos(world.dog[0]+dx,world.dog[1]+dy);
+      const count=world.visits.get(key)||0;
+      return Math.log(Math.max(1e-6,probs[i]))-0.65*Math.min(5,count);
+    };
+    const ranked=[0,1,2,3].sort((a,b)=>score(b)-score(a));
     const chosen=ranked.find(i=>{
       const [dx,dy]=DIR[directions[i]],xx=world.dog[0]+dx,yy=world.dog[1]+dy;
       return xx>=0&&yy>=0&&xx<N&&yy<N&&!world.known.has(pos(xx,yy));
@@ -81,18 +88,26 @@
   }
   async function tryAutonomy(){
     if(!world||world.done||world.helpPending||world.helpActive)return;
-    if(world.autoRunning)return;
+    if(world.autoInterrupted){update('Ovaj samostalni pokušaj je prekinut. Za novi pokušaj otvori novi labirint.');return;}
+    if(world.autoRunning||world.autoRequested)return;
     const snapshot=world;
+    world.autoRequested=true;
+    controlsState();
     update('Učitavam istrenirani navigacijski mozak...');
     const brain=window.MaliNavBrain;
     if(!brain||!await brain.load()){
-      update('Nema objavljenog modela. U lokalnom Control Centeru odaberi brain/navigation-active.json i klikni Objavi mozak.');
+      if(world===snapshot){
+        world.autoRequested=false;
+        controlsState();
+        update('Nema objavljenog modela. U lokalnom Control Centeru odaberi brain/navigation-active.json i klikni Objavi mozak.');
+      }
       return;
     }
-    if(world!==snapshot||world.done)return;
+    if(world!==snapshot||world.done||world.autoInterrupted||!world.autoRequested)return;
+    world.autoRequested=false;
     world.usedAuto=true;world.autoRunning=true;world.autoSteps=0;
     world.autoStates=[world.targetIndex+'|'+pos(...world.dog)];
-    world.visits=new Map([[pos(...world.dog),1]]);
+    // Visits are tracked throughout the maze, including earlier manual moves.
     world.previous=null;
     controlsState();
     update('🧠 Mali sam odlučuje kamo će ići. Model: '+brain.version());
@@ -197,13 +212,13 @@
   function newMaze(){
     stopAuto();
     const map=createWorld();
-    world={walls:map.walls,optimal:map.optimal,goals:map.goals,cfg:map.cfg,known:new Set(),dog:START.slice(),ballRgbs:map.goals.map(()=>window.MaliConfig.randomRgb()),targetIndex:0,moves:0,hits:0,steps:[],done:false,usedAuto:false,autoRunning:false,helpPending:false,helpActive:false,autoSteps:0};
+    world={walls:map.walls,optimal:map.optimal,goals:map.goals,cfg:map.cfg,known:new Set(),dog:START.slice(),ballRgbs:map.goals.map(()=>window.MaliConfig.randomRgb()),targetIndex:0,moves:0,hits:0,steps:[],done:false,usedAuto:false,autoRunning:false,autoRequested:false,autoInterrupted:false,helpPending:false,helpActive:false,autoSteps:0,visits:new Map([[pos(...START),1]]),previous:null};
     reveal();draw();void window.MaliConfig.refresh(false);
   }
   function cells(){
     let out='';
     for(let y=0;y<N;y++)for(let x=0;x<N;x++){
-      const k=pos(x,y),dog=world.dog[0]===x&&world.dog[1]===y,
+      const k=pos(x,y),visits=world.visits.get(k)||0,dog=world.dog[0]===x&&world.dog[1]===y,
         i=world.goals.findIndex(g=>g[0]===x&&g[1]===y),rock=world.known.has(k);
       // Previously collected balls must disappear visually. The model already
       // receives world.goals[world.targetIndex], so drawing an old ball was misleading.
@@ -211,8 +226,12 @@
       const kind=dog?'dog':pendingBall?(i===world.targetIndex?'goal':'future'):rock?'rock':'empty';
       const what=dog?'🐶':pendingBall?'<span class="ml-ball" style="--ml-ball-color:rgb('+
         world.ballRgbs[i].join(',')+')"><span class="ml-ball-num">'+(i+1)+'</span></span>':rock?'🪨':'';
+      const pawLevel=visits<=2?1:visits<=5?2:visits<=10?3:4;
+      const paw=visits>0&&!dog&&!rock&&!pendingBall
+        ?'<span class="ml-paw ml-paw-'+pawLevel+'" aria-hidden="true">🐾</span>':'';
       out+='<div class="ml-cell ml-'+kind+'" role="gridcell" aria-label="'+
-        (dog?'Mali':pendingBall?'Loptica '+(i+1):rock?'Prepreka':'Prazno polje')+'">'+what+'</div>';
+        (dog?'Mali':pendingBall?'Loptica '+(i+1):rock?'Prepreka':'Prazno polje')+
+        (!dog&&!rock&&visits?'; posjećeno '+visits+' puta':'')+'">'+what+paw+'</div>';
     }
     return out;
   }
@@ -227,12 +246,15 @@
     if(world.helpPending)return '<div class="ml-result">🐶 Zapetljao sam se. Trebam tvoju pomoć! Klikni Pomozi mi ili odmah koristi strelice.</div>'+
       arrowControlsHtml()+
       '<div class="ml-actions"><button class="action" type="button" data-ml-action="help">🐾 Pomozi mi</button></div>';
-    if(world.autoRunning)return '<div class="ml-result">🧠 Mali pokušava sam. Možeš ga zaustaviti.</div>';
+    if(world.autoRequested||world.autoRunning)return '<div class="ml-result">🧠 Mali traži sam. Strelice su zaključane dok ne zatraži pomoć; Zaustavi prekida bez XP-a.</div>';
     return arrowControlsHtml();
   }
   function resultHtml(){
     return '<div class="ml-result">🎉 Sve loptice skupljene! Tvoj put: '+world.moves+' koraka. Najkraći mogući: '+world.optimal+
-      '. '+(world.usedAuto?'<b>Automatski pokušaj (nije ljudska ruta).</b>':world.storageError?'Spremanje nije uspjelo.':'<b>Ruta spremljena na uređaju.</b>')+'</div>';
+      '. '+(world.usedAuto?(world.autoInterrupted
+        ?'<b>Prekinuti samostalni pokušaj: bez XP-a i lekcije.</b>'
+        :'<b>Samostalni pokušaj (nije ljudska ruta).</b>')
+        :world.storageError?'Spremanje nije uspjelo.':'<b>Ruta spremljena na uređaju.</b>')+'</div>';
   }
   function draw(message){
     if(!ctx)return;
@@ -268,10 +290,14 @@
   function solved(){
     world.done=true;
     if(world.usedAuto){
-      ctx.s.xp=(ctx.s.xp||0)+8;
+      // A forced stop permanently disqualifies this maze from XP, even if finished manually.
+      if(!world.autoInterrupted)ctx.s.xp=(ctx.s.xp||0)+8;
       ctx.s.joy=Math.min(100,(ctx.s.joy||0)+6);
       ctx.s.energy=Math.max(0,(ctx.s.energy||0)-5);
-      ctx.persist();ctx.render();ctx.speak('Bravo! 🐾','Mali je stigao do cilja.');
+      ctx.persist();ctx.render();
+      ctx.speak('Bravo! 🐾',world.autoInterrupted
+        ?'Pokušaj je prekinut: nema XP-a ni spremljene lekcije.'
+        :'Mali je stigao do cilja.');
       return;
     }
     const entry={
@@ -310,7 +336,8 @@
         known_walls:decision.known_walls.slice()});
     if(blocked)world.hits++; else{
       world.dog=[x,y];world.moves++;reveal();
-      if(byAuto){world.previous=direction;world.visits.set(pos(x,y),(world.visits.get(pos(x,y))||0)+1);}
+      world.visits.set(pos(x,y),(world.visits.get(pos(x,y))||0)+1);
+      if(byAuto)world.previous=direction;
     }
     let msg=blocked?'Ovdje ne mogu proći!':'Idemo dalje!';
     const target=world.goals[world.targetIndex];
@@ -337,7 +364,19 @@
       const d=btn.getAttribute('data-ml-dir'),a=btn.getAttribute('data-ml-action');
       if(d)move(d,false);else if(a==='new')newMaze();
       else if(a==='export')exportAll();else if(a==='auto')void tryAutonomy();
-      else if(a==='stop'){stopAuto();controlsState();update('Zaustavljeno. Možeš preuzeti strelice ili pokrenuti novi pokušaj.');}
+      else if(a==='stop'){
+        const interrupted=world&&(world.autoRunning||world.autoRequested||world.helpPending||world.helpActive);
+        if(interrupted){
+          world.usedAuto=true;
+          world.autoInterrupted=true;world.autoRequested=false;
+          world.helpPending=false;world.helpActive=false;
+          world.helpIncident=null;world.helpActions=[];
+        }
+        stopAuto();controlsState();
+        update(interrupted
+          ?'Samostalni pokušaj je prekinut. Možeš nastaviti ručno, ali bez XP-a i nove lekcije.'
+          :'Zaustavljeno. Možeš nastaviti ručno ili otvoriti novi labirint.');
+      }
       else if(a==='help')beginHelp();
     }
   };

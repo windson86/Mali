@@ -29,3 +29,11 @@
 #ml-stop{background:#ffe7d1}
 #ml-cloud-status{overflow-wrap:anywhere}
 .ml-result{line-height:1.5}
+
+/* Paw trails: previous visits are visible, but never block returning from a dead end. */
+.ml-cell{position:relative}
+.ml-paw{position:absolute;right:3%;bottom:3%;font-size:clamp(8px,.58em,14px);line-height:1;pointer-events:none;filter:grayscale(1)}
+.ml-paw-1{opacity:.20}
+.ml-paw-2{opacity:.40}
+.ml-paw-3{opacity:.65}
+.ml-paw-4{opacity:.85}
