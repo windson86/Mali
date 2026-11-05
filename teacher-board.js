@@ -33,7 +33,7 @@
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&open)hide();});
   function hide(){open=false;cover.hidden=true;button.focus();}
   function show(mode){open=true;cover.hidden=false;render(mode||(!nickname?'profile':'board'));const f=cover.querySelector('input');if(f)f.focus();}
-  function localMessage(){return !ready?'Firebase se povezuje; nadimak se može spremiti lokalno.':error||'';}
+  function localMessage(){return error||(!ready?'Firebase se povezuje; nadimak se može spremiti lokalno.':'');}
   function render(mode){
     const dst=document.getElementById('ml-teachers-content');
     if(!dst)return;
@@ -165,7 +165,11 @@
           nickname=current.val().nickname;
           try{localStorage.setItem(NICK_KEY,nickname);}catch(_){}
         }else if(nickname){await saveProfile();}
-      }catch(_){/* Rules may not yet be published; local nickname stays available. */}
+      }catch(_){
+        // Existing rules may deny the read before the teacher rollout.
+        // Retry profile creation next time this version loads.
+        if(nickname)await saveProfile();
+      }
       await flush();await loadBoard();
       if(open)render(!nickname?'profile':'board');
     }catch(e){
