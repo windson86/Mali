@@ -37,3 +37,10 @@
 .ml-paw-2{opacity:.40}
 .ml-paw-3{opacity:.65}
 .ml-paw-4{opacity:.85}
+
+/* Keep directions fixed when Mali first requests manual help.
+   Both the help notice and the help-action row retain their space. */
+#ml-message{min-height:4.5em;line-height:1.5}
+.ml-help-banner{min-height:3.5em;display:flex;align-items:center;justify-content:center;text-align:center}
+.ml-help-actions{min-height:41px}
+.ml-help-actions .action[disabled]{opacity:.75;cursor:default}
