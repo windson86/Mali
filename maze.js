@@ -4,6 +4,11 @@
   let N=8, START=[0,7], GOAL=[7,0]; const KEY='mali-navigation-lessons-v1';
   const DIR={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
   let world=null, ctx=null, saved=[], autoTimer=null;
+  // Full viewport on phones. Keep desktop modal and the rest of Mali unchanged.
+  const mazeScreenStyle=document.createElement('style');
+  mazeScreenStyle.id='mali-maze-mobile-screen';
+  mazeScreenStyle.textContent="\n/* Fullscreen maze on mobile, with large square cells and compact controls.\n   CSS is co-located with the maze module so this ships in one commit/deploy. */\n@media (max-width:700px) {\n #overlay:has(#ml-board) { position:fixed; inset:0; width:100%; height:100dvh; padding:0; display:block; overflow:hidden; touch-action:none; overscroll-behavior:none; }\n #overlay:has(#ml-board) .modal { width:100vw; height:100dvh; max-height:100dvh; border:0; border-radius:0; box-shadow:none; padding:6px 6px 8px; display:flex; flex-direction:column; overflow:hidden; touch-action:none; user-select:none; }\n #overlay:has(#ml-board) #modalTitle { margin:0 34px 2px; font-size:17px; line-height:26px; flex-shrink:0; }\n #overlay:has(#ml-board) .close { z-index:3; top:3px; right:4px; padding:3px 8px; }\n #overlay:has(#ml-board) #modalContent { flex:1; min-height:0; display:flex; flex-direction:column; overflow-y:auto; scrollbar-width:none; overscroll-behavior:contain; }\n #overlay:has(#ml-board) #modalContent::-webkit-scrollbar { display:none; }\n #overlay:has(#ml-board) .ml-help { margin:0!important; font-size:11px!important; line-height:1.25; }\n #overlay:has(#ml-board) .ml-board { width:min(calc(100vw - 12px), calc(100dvh - 250px)); max-width:100%; max-height:calc(100dvh - 250px); aspect-ratio:1; flex-shrink:0; margin:4px auto 3px; gap:2px; padding:2px; border-width:3px; --ml-font:clamp(12px,3.8vw,22px)!important; }\n #overlay:has(#ml-board) .ml-stats { margin:2px auto 0; font-size:11px; }\n #overlay:has(#ml-board) .ml-message { margin:2px auto!important; min-height:3.8em!important; font-size:11px; line-height:1.25!important; }\n #overlay:has(#ml-board) .ml-controls { grid-template-columns:repeat(3,41px); gap:3px; margin:2px auto; }\n #overlay:has(#ml-board) .ml-controls .action { min-height:34px; padding:3px; }\n #overlay:has(#ml-board) .ml-actions { margin:3px auto; gap:5px; }\n #overlay:has(#ml-board) .ml-actions .action { font-size:10px; padding:5px 7px; }\n #overlay:has(#ml-board) .ml-result { padding:5px; font-size:11px; }\n #overlay:has(#ml-board) .ml-footnote { display:none; }\n}\n@media (max-width:700px) and (max-height:570px) {\n #overlay:has(#ml-board) .ml-board { width:min(calc(100vw - 12px), calc(100dvh - 200px)); max-height:calc(100dvh - 200px); }\n #overlay:has(#ml-board) .ml-controls { grid-template-columns:repeat(3,35px); }\n #overlay:has(#ml-board) .ml-controls .action { min-height:29px; }\n}\n";
+  document.head.appendChild(mazeScreenStyle);
   const SWIPE_MIN_PX=10;
   const KEY_TO_DIR={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',
     w:'up',s:'down',a:'left',d:'right'};
@@ -443,11 +448,17 @@
       startHold(button.getAttribute('data-ml-dir'),{type:'pointer',id:e.pointerId});
       return;
     }
-    const board=e.target.closest&&e.target.closest('#ml-board');
-    if(!board||(e.pointerType!=='touch'&&e.pointerType!=='pen'))return;
+    // A finger gesture may start anywhere in the maze dialog, not just
+    // on the tiles. Interactive controls must keep their native click action.
+    if(e.pointerType!=='touch'&&e.pointerType!=='pen')return;
+    const overlay=e.target.closest&&e.target.closest('#overlay');
+    if(!overlay||e.target.closest('button,a,input,select,textarea,[role="button"]'))return;
     stopHold();
     swipeStart={id:e.pointerId,x:e.clientX,y:e.clientY};
-    try{board.setPointerCapture(e.pointerId);}catch(_){}
+    // Capturing on the modal prevents an overlay click accidentally closing
+    // the maze when a swipe begins in the free space around the board.
+    const surface=overlay.querySelector('.modal');
+    try{if(surface)surface.setPointerCapture(e.pointerId);}catch(_){}
   });
   document.addEventListener('pointerup',function(e){
     if(held&&held.type==='pointer'&&held.id===e.pointerId)stopHold();
