@@ -3,13 +3,11 @@
    Teacher XP is separate from Tamagotchi room XP. */
 (function(){
   'use strict';
-  const cfg=window.MALI_FIREBASE_CONFIG||{};
-  const BASE='https://www.gstatic.com/firebasejs/12.19.0/';
   const NICK_KEY='mali-teacher-nickname-v1';
   const QUEUE_KEY='mali-teacher-pending-credits-v1';
   const SKIP_KEY='mali-teacher-skip-until-v1';
   const POINTS={color:5,route:10,help:30};
-  let nickname='',uid='',db=null,database=null,auth=null,ready=false,flushing=false,open=false;
+  let nickname='',uid='',db=null,database=null,ready=false,flushing=false,open=false;
   let pending=[],period='week',profiles={},credits={},error='';
   try{nickname=localStorage.getItem(NICK_KEY)||'';}catch(_){}
   try{
@@ -81,9 +79,44 @@
         db.get(db.ref(database,'teacherProfiles/v1')),
         db.get(db.ref(database,'teacherCredits/v1'))
       ]);
-      profiles=p.val()||{};credits=c.val()||{};error='';
+      profiles=p.val()||{};credits=c.val()||{};
+      if(!pending.length)error='';
     }catch(e){error='Rang-lista još nije dostupna. Provjeri objavu novih Firebase pravila.';}
     if(open)render('board');
+  }
+  async function recoverUploadedCredits(){
+    if(!ready)return;
+    // Only existing *server-side* lessons may earn credits; this also restores
+    // previously uploaded lessons from before the leaderboard existed.
+    const paths=[
+      ['color','colorLessons/v1/'+uid],
+      ['route','navigationLessons/v1/'+uid],
+      ['help','navigationCorrections/v1/'+uid]
+    ];
+    try{
+      const [receipts,...sources]=await Promise.all([
+        db.get(db.ref(database,'teacherCredits/v1/'+uid)),
+        ...paths.map(p=>db.get(db.ref(database,p[1])))
+      ]);
+      const awarded=receipts.val()||{};
+      const valid=new Map();
+      sources.forEach((snapshot,i)=>{
+        const kind=paths[i][0],all=snapshot.val()||{};
+        Object.keys(all).slice(-250).forEach(id=>{
+          if(typeof id==='string'&&id.length<=75&&POINTS[kind])
+            valid.set(kind+'|'+id,{kind,id});
+        });
+      });
+      pending=pending.filter(v=>valid.has(v.kind+'|'+v.id)&&!awarded[v.id]);
+      const queued=new Set(pending.map(v=>v.kind+'|'+v.id));
+      for(const [key,item] of valid){
+        if(!awarded[item.id]&&!queued.has(key)){pending.push(item);queued.add(key);}
+      }
+      pending=pending.slice(-300);
+      saveQueue();
+    }catch(e){
+      error='Ne mogu provjeriti ranije lekcije. Provjeri Firebase prava i vezu.';
+    }
   }
   async function saveProfile(){
     if(!ready||!nickname)return;
@@ -121,7 +154,13 @@
           pending.splice(i,1);saveQueue();
         }catch(e){error='Bodovi čekaju Firebase pravila ili vezu.';break;}
       }
-    }finally{flushing=false;}
+    }finally{
+      flushing=false;
+      if(!pending.length&&ready){
+        error='';
+        void loadBoard();
+      }else if(open)render('board');
+    }
   }
   cover.addEventListener('click',e=>{
     const action=e.target.closest('[data-t-action]')?.getAttribute('data-t-action');
@@ -133,7 +172,7 @@
       hide();return;
     }
     if(action==='edit'){render('profile');return;}
-    if(action==='refresh'){void loadBoard();return;}
+    if(action==='refresh'){void (async()=>{await recoverUploadedCredits();await flush();await loadBoard();})();return;}
   });
   cover.addEventListener('submit',e=>{
     if(e.target.id!=='ml-teachers-form')return;
@@ -150,15 +189,10 @@
     if(Date.now()>until)show('profile');
   }
   (async()=>{
-    if(!cfg.apiKey||!cfg.databaseURL)return;
     try{
-      const [appMod,authMod,dbMod]=await Promise.all([
-        import(BASE+'firebase-app.js'),import(BASE+'firebase-auth.js'),import(BASE+'firebase-database.js')
-      ]);
-      const app=appMod.getApps().length?appMod.getApp():appMod.initializeApp(cfg);
-      auth=authMod.getAuth(app);
-      const result=await authMod.signInAnonymously(auth);
-      uid=result.user.uid;db=dbMod;database=db.getDatabase(app);ready=true;
+      const connection=await window.MaliCloud?.whenReady?.();
+      if(!connection)throw Error('MaliCloud identity unavailable');
+      uid=connection.userId;db=connection.sdk;database=connection.database;ready=true;
       try{
         const current=await db.get(db.ref(database,'teacherProfiles/v1/'+uid));
         if(current.exists()&&validNick(current.val()?.nickname)){
@@ -170,6 +204,7 @@
         // Retry profile creation next time this version loads.
         if(nickname)await saveProfile();
       }
+      await recoverUploadedCredits();
       await flush();await loadBoard();
       if(open)render(!nickname?'profile':'board');
     }catch(e){
