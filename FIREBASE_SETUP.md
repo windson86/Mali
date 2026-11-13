@@ -32,3 +32,12 @@ Skript kreira `lekcije/mali-zajednicke-lekcije.json`. Kreni s provjerom učestal
 - Sigurnosna pravila provjeravaju format i vlasništvo nad podacima, **ali ne mogu jamčiti da je osoba točno imenovala boju**, niti potpuno spriječiti spam anonimnih računa.
 - **Prije šire javne objave** treba testirati pravila, dodati zaštitu od zloporaba (App Check i/ili serverski rate limiting), pravila privatnosti i postupak za roditeljski pristanak gdje je potreban. Ne stavljati slobodni tekst, osobne podatke ili imena djece u lekcije.
 - Pratiti besplatne kvote baze i autentikacije.
+
+
+## Privatna statistika država (pilot)
+- Netlify funkcija `netlify/functions/player-country.mjs` određuje približnu državu iz mrežne veze. GPS dopuštenje nije potrebno. Puni IP se **ne sprema u Firebase**; Netlify može obrađivati mrežne podatke u vlastitim poslužiteljskim zapisima.
+- `player-country.js` uz postojeći anonimni Firebase UID sprema samo `nickname`, dvoslovnu `country` (npr. PH) i `updated_at` u `playerCountries/v1/<uid>` kada postoji spremljeni nadimak, najviše jednom u šest sati po pregledniku ili pri promjeni nadimka.
+- `playerCountries/v1` nema klijentsko pravo čitanja (ni za vlasnika korisničkog računa); jedino vlasnik Firebase projekta kroz **Firebase Console → Realtime Database → Data** ili Admin SDK može pregledati popis.
+- **Obavezno ručno objaviti ažurirana pravila** iz `firebase.rules.json` u Firebase Console → Realtime Database → Rules → Publish. GitHub/Netlify objava ne mijenja automatski Firebase pravila.
+- Provjera: nakon objave pravila, otvoriti mali.com.hr na uređaju s nadimkom, otvoriti Firebase Console i provjeriti `playerCountries/v1/<uid>`. U simulatoru pravila provjeriti da anoniman korisnik ne može čitati taj put ni tuđe zapise.
+- Zemlja iz IP-a je samo procjena (VPN i mobilni operateri mogu promijeniti rezultat), a korisnički zapis nije neoboriv dokaz lokacije. Ne koristiti ga kao jedinu osnovu za isplatu nagrada.

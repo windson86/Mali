@@ -39,7 +39,8 @@
       dst.innerHTML='<p>🐶 Hi! What should I call you? Your nickname will appear on the leaderboard.</p>'+
         '<form id="ml-teachers-form"><label for="ml-teachers-nick">Nickname (3–20 characters)</label>'+
         '<input id="ml-teachers-nick" name="nickname" maxlength="20" autocomplete="nickname" value="'+esc(nickname)+'" required>'+
-        '<p class="ml-t-note">Letters, numbers, _ and -. No email or real name. Nicknames do not have to be unique.</p>'+
+        '<p class="ml-t-note">Letters, numbers, _ and -. No email or real name. Nicknames do not have to be unique.</p>'+ 
+        '<p class="ml-t-note">For private administration we estimate your country from your internet connection. We do not save your full IP address in Mali. Only the site owner can read country statistics.</p>'+
         '<button type="submit" class="ml-t-primary">Save nickname</button> '+
         '<button type="button" data-t-action="skip">Not now</button></form>'+
         '<p class="ml-t-note" role="status">'+esc(localMessage())+'</p>';
@@ -55,7 +56,7 @@
           '<li><span class="ml-t-rank">'+(i+1)+'.</span><span>'+esc(r.nick)+(r.uid===uid?' (you)':'')+'</span><strong>'+r.xp+' XP</strong></li>').join('')+'</ol>'
         :'<p>No verified lessons for this period yet.</p>')+
       '<p class="ml-t-note">'+(yours>=0?'Your rank: '+(yours+1)+'. · '+rows[yours].xp+' XP':'You have no points this period yet.')+'</p>'+
-      '<p class="ml-t-note">Maze +10 · Help +30 · Color +5. Only nicknames and points are public.</p>'+
+      '<p class="ml-t-note">Maze +10 · Help +30 · Color +5. Only nicknames and points are public.</p><p class="ml-t-note">Country is estimated from your connection and saved privately for the site owner, without storing your full IP in Mali.</p>'+
       (pending.length?'<p class="ml-t-note">'+pending.length+' lessons awaiting point confirmation.</p>':'')+
       '<p class="ml-t-note" role="status">'+esc(localMessage())+'</p>'+
       '<button type="button" data-t-action="refresh">Refresh</button> <button type="button" data-t-action="edit">Edit nickname</button>';
@@ -180,6 +181,7 @@
     const n=document.getElementById('ml-teachers-nick')?.value.trim()||'';
     if(!validNick(n)){alert('Nickname must have 3–20 characters: letters, numbers, _ or -.');return;}
     nickname=n;
+    window.dispatchEvent(new Event('mali:nickname-changed'));
     try{localStorage.setItem(NICK_KEY,n);}catch(_){}
     render('board');void saveProfile();
   });
@@ -197,6 +199,7 @@
         const current=await db.get(db.ref(database,'teacherProfiles/v1/'+uid));
         if(current.exists()&&validNick(current.val()?.nickname)){
           nickname=current.val().nickname;
+          window.dispatchEvent(new Event('mali:nickname-changed'));
           try{localStorage.setItem(NICK_KEY,nickname);}catch(_){}
         }else if(nickname){await saveProfile();}
       }catch(_){

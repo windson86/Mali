@@ -448,6 +448,27 @@
           }
         }
       }
+    },
+    "playerCountries": {
+      "v1": {
+        ".read": false,
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid && newData.exists()",
+          ".validate": "newData.hasChildren(['nickname', 'country', 'updated_at'])",
+          "nickname": {
+            ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_čćđšžČĆĐŠŽ-]{3,20}$/)"
+          },
+          "country": {
+            ".validate": "newData.isString() && newData.val().matches(/^[A-Z]{2}$/)"
+          },
+          "updated_at": {
+            ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= now"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
     }
   }
 }
