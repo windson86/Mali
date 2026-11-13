@@ -5,10 +5,12 @@
   var STORAGE = 'mali-color-lessons-v1';
   var LABELS = ['crvena','plava','zelena','žuta'];
   function activeLabels(){return window.MaliConfig?window.MaliConfig.activeColors().map(c=>c.name.toLocaleLowerCase('hr')):LABELS;}
+  // Display English names while preserving existing Croatian model/Firebase labels.
+  function englishLabel(label){return ({crvena:'Red',plava:'Blue',zelena:'Green',žuta:'Yellow'})[String(label).toLocaleLowerCase('hr')] || label;}
   function esc(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   var MAX_LESSONS = 1800;
   var brain = null;
-  var brainInfo = 'Mozak još nije istreniran.';
+  var brainInfo = 'The brain has not been trained yet.';
   var lessons = [];
   var sample = null;
   var recorded = false;
@@ -29,11 +31,11 @@
       if (data && data.trained === true && data.model && Array.isArray(data.classes) &&
           data.model.w1 && data.model.w1.length === 3 && Array.isArray(data.model.b1) && Array.isArray(data.model.b2) && data.model.w2 && data.model.w2.length === data.model.b1.length && data.model.b2.length === data.classes.length && data.classes.length > 0) {
         brain = data;
-        brainInfo = 'Mozak ' + String(data.version || '1') + ' — naučen iz ljudskih lekcija.';
+        brainInfo = 'Brain ' + String(data.version || '1') + ' — trained on human lessons.';
       }
       if (currentMode === 'home' && context && !ui('overlay').hidden) showHome();
     })
-    .catch(function () { brainInfo = 'Naučeni model zasad nije objavljen.'; });
+    .catch(function () { brainInfo = 'No trained model has been published yet.'; });
 
   function validLesson(l) {
     return l && Array.isArray(l.rgb) && l.rgb.length === 3 &&
@@ -50,24 +52,24 @@
   }
   function labelButtons() {
     return '<div class="school-grid">' + activeLabels().map(function (label) {
-      return '<button type="button" class="action" data-color-label="' + esc(label) + '">' + esc(label.charAt(0).toUpperCase() + label.slice(1)) + '</button>';
+      return '<button type="button" class="action" data-color-label="' + esc(label) + '">' + esc(englishLabel(label)) + '</button>';
     }).join('') + '</div>';
   }
   function note() {
-    return '<p class="muted">' + lessons.length + ' lekcija na ovom uređaju. Kada je Firebase dostupan, lekcije se šalju u zajedničku bazu.</p>';
+    return '<p class="muted">' + lessons.length + ' lessons on this device. Lessons sync to the shared database when Firebase is available.</p>';
   }
   function openModal(screen, title, body) {
     currentMode = screen;
     context.open('colors-' + screen, title, body);
   }
   function showHome() {
-    openModal('home', 'Malijeva škola boja 🧠',
-      '<p>Mali tek treba naučiti koje su boje loptice. Odgovore dobiva od ljudi — nema skrivenog popisa točnih odgovora.</p>' +
-      '<div class="school-grid"><button class="action" data-school="teach">📖 Uči me</button>' +
-      '<button class="action" data-school="test">🧠 Pokaži što znaš</button></div>' +
+    openModal('home', 'Mali's Color School 🧠',
+      '<p>Mali is learning ball colors from people. There is no hidden answer key.</p>' +
+      '<div class="school-grid"><button class="action" data-school="teach">📖 Teach me</button>' +
+      '<button class="action" data-school="test">🧠 Show what you know</button></div>' +
       '<p class="school-status">' + brainInfo + '</p>' + note() +
-      '<p class="muted">' + (window.MaliCloud ? window.MaliCloud.message() : 'Lekcije su samo na ovom uređaju.') + '</p>' +
-      '<button class="action school-export" data-school="export">⬇ Izvezi moje lekcije (.json)</button>');
+      '<p class="muted">' + (window.MaliCloud ? window.MaliCloud.message() : 'Lessons are only on this device.') + '</p>' +
+      '<button class="action school-export" data-school="export">⬇ Export my lessons (.json)</button>');
   }
   function chooseMode(mode) {
     if (mode !== 'teach' && mode !== 'test') return;
@@ -94,33 +96,33 @@
     currentMode = mode;
     currentGuess = mode === 'test' ? predict(sample) : null;
     var correction = !!correcting && !!currentGuess;
-    var intro = mode === 'teach' ? 'Pogledaj lopticu i reci Malom koju boju vidiš.' :
-      !currentGuess ? 'Još nemam objavljeni naučeni mozak. Možeš me naučiti koju boju vidiš?' :
-      correction ? 'Hvala što me ispravljaš! Koja je prava boja loptice?' :
-      '🐶 Mislim da je ovo <strong>' + currentGuess + '</strong>. Jesam li pogodio?';
+    var intro = mode === 'teach' ? 'Look at the ball and tell Mali which color you see.' :
+      !currentGuess ? 'I don't have a trained brain yet. Can you teach me this color?' :
+      correction ? 'Thanks for correcting me! What color is the ball?' :
+      '🐶 I think this is <strong>' + currentGuess + '</strong>. Am I right?';
     var controls = mode === 'test' && currentGuess && !correction
-      ? '<div class="school-actions"><button class="action" type="button" data-school="agree">✓ Bravo!</button>' +
-        '<button class="action" type="button" data-school="correct">✎ Nije, nego…</button></div>'
+      ? '<div class="school-actions"><button class="action" type="button" data-school="agree">✓ Correct!</button>' +
+        '<button class="action" type="button" data-school="correct">✎ Not quite…</button></div>'
       : labelButtons();
-    var hint = correction ? 'Odaberi pravu boju. Zabilježit ću tvoj ispravak.' :
-      '„Ne znam” i „Druga loptica” preskaču bez spremanja lekcije.';
-    openModal(mode, mode === 'teach' ? 'Uči me bojama 🎨' : 'Pokaži što znaš 🐶',
+    var hint = correction ? 'Choose the correct color. I will remember your correction.' :
+      '“I don’t know” and “Next ball” skip this sample without saving a lesson.';
+    openModal(mode, mode === 'teach' ? 'Teach me colors 🎨' : 'Show what you know 🐶',
       '<p>' + intro + '</p><div class="ball-preview school-preview" style="background:' + rgbCss(sample) + '"></div>' +
       '<p class="muted">' + hint + '</p>' + controls +
-      '<div class="school-actions"><button class="action" type="button" data-school="skip">↻ Druga loptica</button>' +
+      '<div class="school-actions"><button class="action" type="button" data-school="skip">↻ Next ball</button>' +
       ((mode === 'teach' || !currentGuess || correction) &&
         (!window.MaliConfig || window.MaliConfig.get().colors.allow_unlisted_feedback) ?
-        '<button class="action" type="button" data-school="unlisted">✕ Nijedna od ponuđenih</button>' : '') +
+        '<button class="action" type="button" data-school="unlisted">✕ None of these</button>' : '') +
       (!window.MaliConfig || window.MaliConfig.get().colors.allow_dont_know ?
-        '<button class="action" type="button" data-school="skip">🤷 Ne znam</button>' : '') +
-      (correction ? '<button class="action" type="button" data-school="back-to-guess">← Ipak natrag</button>' : '') +
-      '<button class="action" type="button" data-school="home">← Natrag</button></div>' +
-      '<p id="lessonStatus" class="muted">' + lessons.length + ' spremljenih lekcija na ovom uređaju.</p>');
+        '<button class="action" type="button" data-school="skip">🤷 I don't know</button>' : '') +
+      (correction ? '<button class="action" type="button" data-school="back-to-guess">← Back to my guess</button>' : '') +
+      '<button class="action" type="button" data-school="home">← Back</button></div>' +
+      '<p id="lessonStatus" class="muted">' + lessons.length + ' saved lessons on this device.</p>');
   }
   function save(label) {
     if (recorded || !sample || activeLabels().indexOf(label) < 0) return;
     if (lessons.length >= MAX_LESSONS) {
-      ui('lessonStatus').textContent = 'Memorija je puna. Najprije izvezi lekcije.';
+      ui('lessonStatus').textContent = 'Storage is full. Export your lessons first.';
       return;
     }
     var entry = {
@@ -132,7 +134,7 @@
     try { localStorage.setItem(STORAGE, JSON.stringify(lessons)); }
     catch (err) {
       lessons.pop();
-      ui('lessonStatus').textContent = 'Nije moguće spremiti lekciju. Provjeri memoriju preglednika.';
+      ui('lessonStatus').textContent = 'Could not save the lesson. Check browser storage.';
       return;
     }
     recorded = true;
@@ -143,9 +145,9 @@
       context.s.xp = (context.s.xp || 0) + 1;
       context.persist();
       context.render();
-      context.speak('Hvala! 🐾', 'Lekcija spremljena lokalno; Firebase sinkronizira kad je dostupan.');
+      context.speak('Thank you! 🐾', 'Lesson saved locally; Firebase will sync when available.');
     }
-    ui('lessonStatus').textContent = 'Spremljeno: ' + label + '! Ukupno ' + lessons.length + ' lekcija. Stiže nova loptica…';
+    ui('lessonStatus').textContent = 'Saved: ' + label + '! Total ' + lessons.length + ' lessons. New ball coming…';
     // The same lesson remains safely in localStorage even when the database is offline.
     if (window.MaliCloud) window.MaliCloud.enqueueMany([entry]);
     var finishedSample = sample;
@@ -167,14 +169,14 @@
     };
     rows.push(entry);rows=rows.slice(-300);
     try{localStorage.setItem(KEY,JSON.stringify(rows));}
-    catch(err){if(ui('lessonStatus'))ui('lessonStatus').textContent='Ne mogu spremiti povratnu informaciju.';return;}
+    catch(err){if(ui('lessonStatus'))ui('lessonStatus').textContent='Could not save the feedback.';return;}
     if(window.MaliCloud)window.MaliCloud.enqueueFeedbackMany([entry]);
     // Not a teaching label and no XP. Never train the model on an unlisted RGB.
     chooseMode(currentMode);
   }
   function download() {
     if (!lessons.length) {
-      ui('modalContent').insertAdjacentHTML('beforeend', '<p class="muted">Najprije nauči Malog barem jednu boju.</p>');
+      ui('modalContent').insertAdjacentHTML('beforeend', '<p class="muted">Teach Mali at least one color first.</p>');
       return;
     }
     var payload = { format: 'mali-color-lessons-v1', exported_at: new Date().toISOString(), lessons: lessons };
