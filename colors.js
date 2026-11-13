@@ -99,7 +99,7 @@
     var intro = mode === 'teach' ? 'Look at the ball and tell Mali which color you see.' :
       !currentGuess ? 'I do not have a trained brain yet. Can you teach me this color?' :
       correction ? 'Thanks for correcting me! What color is the ball?' :
-      '🐶 I think this is <strong>' + currentGuess + '</strong>. Am I right?';
+      '🐶 I think this is <strong>' + englishLabel(currentGuess) + '</strong>. Am I right?';
     var controls = mode === 'test' && currentGuess && !correction
       ? '<div class="school-actions"><button class="action" type="button" data-school="agree">✓ Correct!</button>' +
         '<button class="action" type="button" data-school="correct">✎ Not quite…</button></div>'
