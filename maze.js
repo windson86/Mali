@@ -5,7 +5,7 @@
   const DIR={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
   let world=null, ctx=null, saved=[], autoTimer=null;
   // Responsive fullscreen maze layout is in maze.css.
-  const SWIPE_MIN_PX=10;
+  const SWIPE_MIN_PX=18; // Ignore small finger drift; one swipe = one cell.
   const KEY_TO_DIR={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',
     w:'up',s:'down',a:'left',d:'right'};
   let held=null,holdTimer=null,swipeStart=null,ignoreClickUntil=0;
@@ -410,7 +410,10 @@
     open:function(context){ctx=context;newMaze();},
     handleClick:function(event){
       const tile=event.target.closest('.ml-cell');
-      if(tile&&!world.done&&Date.now()>=ignoreClickUntil){
+      // Ignore the synthetic click Android may dispatch immediately after a swipe.
+      const directionButton=event.target.closest('[data-ml-dir]');
+      if(Date.now()<ignoreClickUntil&&(tile||directionButton)){event.preventDefault();return;}
+      if(tile&&!world.done){
         const tx=Number(tile.dataset.mlX),ty=Number(tile.dataset.mlY);
         const dx=tx-world.dog[0],dy=ty-world.dog[1];
         if(dx||dy)move(Math.abs(dx)>=Math.abs(dy)?(dx<0?'left':'right'):(dy<0?'up':'down'),false);
@@ -479,7 +482,8 @@
     if(direction){
       // Android: one completed swipe must always equal exactly one grid step.
       // Suppress the synthetic click that can follow touchend.
-      ignoreClickUntil=Date.now()+600;
+      ignoreClickUntil=Date.now()+650;
+      e.preventDefault();
       move(direction,false);
     }
   });
