@@ -4,15 +4,11 @@
   let N=8, START=[0,7], GOAL=[7,0]; const KEY='mali-navigation-lessons-v1';
   const DIR={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
   let world=null, ctx=null, saved=[], autoTimer=null;
-  // Full viewport on phones. Keep desktop modal and the rest of Mali unchanged.
-  const mazeScreenStyle=document.createElement('style');
-  mazeScreenStyle.id='mali-maze-mobile-screen';
-  mazeScreenStyle.textContent="\n/* Fullscreen maze on mobile, with large square cells and compact controls.\n   CSS is co-located with the maze module so this ships in one commit/deploy. */\n@media (max-width:700px) {\n #overlay:has(#ml-board) { position:fixed; inset:0; width:100%; height:100dvh; padding:0; display:block; overflow:hidden; touch-action:none; overscroll-behavior:none; }\n #overlay:has(#ml-board) .modal { width:100vw; height:100dvh; max-height:100dvh; border:0; border-radius:0; box-shadow:none; padding:6px 6px 8px; display:flex; flex-direction:column; overflow:hidden; touch-action:none; user-select:none; }\n #overlay:has(#ml-board) #modalTitle { margin:0 34px 2px; font-size:17px; line-height:26px; flex-shrink:0; }\n #overlay:has(#ml-board) .close { z-index:3; top:3px; right:4px; padding:3px 8px; }\n #overlay:has(#ml-board) #modalContent { flex:1; min-height:0; display:flex; flex-direction:column; overflow-y:auto; scrollbar-width:none; overscroll-behavior:contain; }\n #overlay:has(#ml-board) #modalContent::-webkit-scrollbar { display:none; }\n #overlay:has(#ml-board) .ml-help { margin:0!important; font-size:11px!important; line-height:1.25; }\n #overlay:has(#ml-board) .ml-board { width:min(calc(100vw - 12px), calc(100dvh - 250px)); max-width:100%; max-height:calc(100dvh - 250px); aspect-ratio:1; flex-shrink:0; margin:4px auto 3px; gap:2px; padding:2px; border-width:3px; --ml-font:clamp(12px,3.8vw,22px)!important; }\n #overlay:has(#ml-board) .ml-stats { margin:2px auto 0; font-size:11px; }\n #overlay:has(#ml-board) .ml-message { margin:2px auto!important; min-height:3.8em!important; font-size:11px; line-height:1.25!important; }\n #overlay:has(#ml-board) .ml-controls { grid-template-columns:repeat(3,41px); gap:3px; margin:2px auto; }\n #overlay:has(#ml-board) .ml-controls .action { min-height:34px; padding:3px; }\n #overlay:has(#ml-board) .ml-actions { margin:3px auto; gap:5px; }\n #overlay:has(#ml-board) .ml-actions .action { font-size:10px; padding:5px 7px; }\n #overlay:has(#ml-board) .ml-result { padding:5px; font-size:11px; }\n #overlay:has(#ml-board) .ml-footnote { display:none; }\n}\n@media (max-width:700px) and (max-height:570px) {\n #overlay:has(#ml-board) .ml-board { width:min(calc(100vw - 12px), calc(100dvh - 200px)); max-height:calc(100dvh - 200px); }\n #overlay:has(#ml-board) .ml-controls { grid-template-columns:repeat(3,35px); }\n #overlay:has(#ml-board) .ml-controls .action { min-height:29px; }\n}\n";
-  document.head.appendChild(mazeScreenStyle);
+  // Responsive fullscreen maze layout is in maze.css.
   const SWIPE_MIN_PX=10;
   const KEY_TO_DIR={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',
     w:'up',s:'down',a:'left',d:'right'};
-  let held=null,holdTimer=null,swipeStart=null,pointerButton=null;
+  let held=null,holdTimer=null,swipeStart=null,ignoreClickUntil=0;
   // A swipe is always one grid step. Diagonals take their dominant axis.
   function swipeDirection(dx,dy){
     if(Math.hypot(dx,dy)<SWIPE_MIN_PX)return null;
@@ -72,12 +68,12 @@
     if(window.MaliCloud&&window.MaliCloud.enqueueIncident)
       window.MaliCloud.enqueueIncident(incident);
     controlsState();
-    update('🐶 Mislim da se vrtim u krug ('+repeats+' puta). Možeš mi pokazati put?');
+    update('🐶 I think I am going in circles ('+repeats+' times). Can you show me the way?');
   }
   function tickAuto(){
     if(!world||!world.autoRunning||world.done||el('overlay').hidden){stopAuto();return;}
     if(world.autoSteps>=Math.min(6*N*N,650)){
-      stopAuto();controlsState();update('Mali je dosegnuo granicu poteza. Zaustavljen je bez lažne pobjede.');
+      stopAuto();controlsState();update('Mali reached the move limit. He stopped without a false win.');
       return;
     }
     const brain=window.MaliNavBrain;
@@ -101,13 +97,13 @@
       return xx>=0&&yy>=0&&xx<N&&yy<N&&!world.known.has(pos(xx,yy));
     });
     if(chosen===undefined){
-      stopAuto();controlsState();update('Mali ne vidi slobodan smjer. Zaustavljen je.');
+      stopAuto();controlsState();update('Mali cannot find a clear direction. He stopped.');
       return;
     }
     const beforeGoal=world.targetIndex;
     move(directions[chosen],true);
     world.autoSteps++;
-    if(world.done){stopAuto();controlsState();update('🎉 Mali je sam pronašao sve loptice!');return;}
+    if(world.done){stopAuto();controlsState();update('🎉 Mali found all the balls on his own!');return;}
     if(world.targetIndex!==beforeGoal){
       world.autoStates=[world.targetIndex+'|'+pos(...world.dog)];
     }else{
@@ -120,18 +116,18 @@
   async function tryAutonomy(){
     stopHold();
     if(!world||world.done||world.helpPending||world.helpActive)return;
-    if(world.autoInterrupted){update('Ovaj samostalni pokušaj je prekinut. Za novi pokušaj otvori novi labirint.');return;}
+    if(world.autoInterrupted){update('This autonomous attempt was interrupted. Start a new maze to try again.');return;}
     if(world.autoRunning||world.autoRequested)return;
     const snapshot=world;
     world.autoRequested=true;
     controlsState();
-    update('Učitavam istrenirani navigacijski mozak...');
+    update('Loading the trained navigation brain...');
     const brain=window.MaliNavBrain;
     if(!brain||!await brain.load()){
       if(world===snapshot){
         world.autoRequested=false;
         controlsState();
-        update('Nema objavljenog modela. U lokalnom Control Centeru odaberi brain/navigation-active.json i klikni Objavi mozak.');
+        update('No published model. Use the local Control Center to publish brain/navigation-active.json.');
       }
       return;
     }
@@ -142,13 +138,13 @@
     // Visits are tracked throughout the maze, including earlier manual moves.
     world.previous=null;
     controlsState();
-    update('🧠 Mali sam odlučuje kamo će ići. Model: '+brain.version());
+    update('🧠 Mali chooses where to go. Model: '+brain.version());
     autoTimer=setInterval(tickAuto,450);
   }
   function beginHelp(){
     if(!world||!world.helpPending)return;
     world.helpPending=false;world.helpActive=true;
-    controlsState();update('Vodi Malog potezima prsta ili strelicama prema loptici. Tvoji potezi postaju nova lekcija.');
+    controlsState();update('Guide Mali to the ball by swiping, tapping or using arrow keys. Your moves become a new lesson.');
   }
   function recordCorrection(){
     if(!world.helpActive||!world.helpActions.length||!world.helpIncident)return;
@@ -190,7 +186,7 @@
     const cfg=window.MaliConfig.get().maze;
     N=cfg.size;START=[0,N-1];
     // Every ball, including number 1, now gets a fresh random location.
-    // Keep Mali's starting square fixed so we change only one training variable.
+    // Keep Mali’s starting square fixed so we change only one training variable.
     const options=[];
     for(let y=0;y<N;y++)for(let x=0;x<N;x++)
       if(pos(x,y)!==pos(...START))options.push([x,y]);
@@ -226,7 +222,7 @@
     }
     // If obstacle placement repeatedly blocks paths, keep random goals but
     // remove walls. Never silently revert to a fixed corner goal.
-    if(!fallbackGoals)throw Error('Nije moguće rasporediti loptice.');
+    if(!fallbackGoals)throw Error('Cannot place the balls.');
     GOAL=fallbackGoals[0].slice();
     let previous=START.slice(),optimal=0;
     for(const p of fallbackGoals){
@@ -262,68 +258,82 @@
       const pawLevel=visits<=2?1:visits<=5?2:visits<=10?3:4;
       const paw=visits>0&&!dog&&!rock&&!pendingBall
         ?'<span class="ml-paw ml-paw-'+pawLevel+'" aria-hidden="true">🐾</span>':'';
-      out+='<div class="ml-cell ml-'+kind+'" role="gridcell" aria-label="'+
-        (dog?'Mali':pendingBall?'Loptica '+(i+1):rock?'Prepreka':'Prazno polje')+
-        (!dog&&!rock&&visits?'; posjećeno '+visits+' puta':'')+'">'+what+paw+'</div>';
+      out+='<div class="ml-cell ml-'+kind+'" data-ml-x="'+x+'" data-ml-y="'+y+'" role="gridcell" aria-label="'+
+        (dog?'Mali':pendingBall?'Ball '+(i+1):rock?'Obstacle':'Empty cell')+
+        (!dog&&!rock&&visits?'; visited '+visits+' times':'')+'">'+what+paw+'</div>';
     }
     return out;
   }
   function arrowControlsHtml(){
     return '<div class="ml-controls">'+
-      '<span></span><button class="action" type="button" data-ml-dir="up" aria-label="Gore">↑</button><span></span>'+
-      '<button class="action" type="button" data-ml-dir="left" aria-label="Lijevo">←</button>'+
-      '<button class="action" type="button" data-ml-dir="down" aria-label="Dolje">↓</button>'+
-      '<button class="action" type="button" data-ml-dir="right" aria-label="Desno">→</button></div>';
+      '<span></span><button class="action" type="button" data-ml-dir="up" aria-label="Up">↑</button><span></span>'+
+      '<button class="action" type="button" data-ml-dir="left" aria-label="Left">←</button>'+
+      '<button class="action" type="button" data-ml-dir="down" aria-label="Down">↓</button>'+
+      '<button class="action" type="button" data-ml-dir="right" aria-label="Right">→</button></div>';
   }
   function controlsHtml(){
     // Keep this entire help region the same size when the first arrow starts
     // a correction. Previously the banner and action disappeared and moved the
     // arrow pad under the user's finger.
-    if(world.helpPending||world.helpActive)return '<div class="ml-result ml-help-banner" style="min-height:3.5em;display:flex;align-items:center;justify-content:center;text-align:center">🐶 Zapetljao sam se. Trebam tvoju pomoć! Vodi me prstom ili strelicama do loptice.</div>'+
+    if(world.helpPending||world.helpActive)return '<div class="ml-result ml-help-banner" style="min-height:3.5em;display:flex;align-items:center;justify-content:center;text-align:center">🐶 I am stuck! Please guide me to the ball with your finger, mouse or arrow keys.</div>'+
       arrowControlsHtml()+
       '<div class="ml-actions ml-help-actions" style="min-height:41px"><button class="action" type="button" data-ml-action="help"'+
       (world.helpActive?' disabled aria-disabled="true"':'')+'>'+
-      (world.helpActive?'🐾 Pomažeš mi':'🐾 Pomozi mi')+'</button></div>';
-    if(world.autoRequested||world.autoRunning)return '<div class="ml-result">🧠 Mali traži sam. Strelice su zaključane dok ne zatraži pomoć; Zaustavi prekida bez XP-a.</div>';
+      (world.helpActive?'🐾 Helping me':'🐾 Help me')+'</button></div>';
+    if(world.autoRequested||world.autoRunning)return '<div class="ml-result">🧠 Mali is exploring on his own. Controls are locked until he needs help; stopping gives no XP.</div>';
     return arrowControlsHtml();
   }
   function resultHtml(){
-    return '<div class="ml-result">🎉 Sve loptice skupljene! Tvoj put: '+world.moves+' koraka. Najkraći mogući: '+world.optimal+
+    return '<div class="ml-result">🎉 All balls collected! Your route: '+world.moves+' steps. Shortest possible: '+world.optimal+
       '. '+(world.usedAuto?(world.autoInterrupted
-        ?'<b>Prekinuti samostalni pokušaj: bez XP-a i lekcije.</b>'
-        :'<b>Samostalni pokušaj (nije ljudska ruta).</b>')
-        :world.storageError?'Spremanje nije uspjelo.':'<b>Ruta spremljena na uređaju.</b>')+'</div>';
+        ?'<b>Interrupted autonomous attempt: no XP or lesson.</b>'
+        :'<b>Autonomous attempt (not a human demonstration).</b>')
+        :world.storageError?'Saving failed.':'<b>Route saved on this device.</b>')+'</div>';
   }
   function draw(message){
     if(!ctx)return;
-    ctx.open('maze','Malijev labirint 🐶',
-      '<p class="ml-help">Skupljaj loptice redom <b>1 → '+world.goals.length+'</b>. Prepreke vidi do <b>'+world.cfg.vision_radius+' polja</b>. Na mobitelu povuci prst za jedan korak.</p>'+
-      '<div id="ml-board" class="ml-board" role="grid" style="--ml-size:'+N+';--ml-font:'+(N===16?11:N===12?15:23)+'px;touch-action:none" aria-label="Labirint '+N+' puta '+N+'">'+cells()+'</div>'+
-      '<div id="ml-stats" class="ml-stats">Koraci: <b>'+world.moves+'</b> · Otkriveno: <b>'+world.known.size+'/'+world.walls.size+'</b> · Udarci: <b>'+world.hits+'</b></div>'+
-      '<div id="ml-message" class="ml-message" style="min-height:4.5em;line-height:1.5" role="status">'+(message||'Pronađi lopticu broj 1. Vodi me strelicama ili prstom!')+'</div>'+
+    ctx.open('maze','Mali’s Maze 🐶',
+      '<p class="ml-help">Collect the balls in order <b>1 → '+world.goals.length+'</b>. You can see obstacles up to <b>'+world.cfg.vision_radius+' cells</b>. Swipe or tap on the grid, or click to guide me.</p>'+
+      '<div id="ml-board" class="ml-board" role="grid" style="--ml-size:'+N+';--ml-font:'+(N===16?11:N===12?15:23)+'px;touch-action:none" aria-label="Maze '+N+' times '+N+'">'+cells()+'</div>'+
+      '<div id="ml-stats" class="ml-stats">Steps: <b>'+world.moves+'</b> · Discovered: <b>'+world.known.size+'/'+world.walls.size+'</b> · Bumps: <b>'+world.hits+'</b></div>'+
+      '<div id="ml-message" class="ml-message" style="min-height:4.5em;line-height:1.5" role="status">'+(message||'Find ball 1. Use swipes, mouse clicks or arrow keys!')+'</div>'+
       '<div id="ml-controlslot">'+(world.done?resultHtml():controlsHtml())+'</div>'+
-      '<div class="ml-actions"><button class="action" type="button" data-ml-action="new">↻ Novi labirint</button>'+
-      '<button id="ml-auto" class="action" type="button" data-ml-action="auto">🧠 Probaj sam</button>'+
-      '<button id="ml-stop" class="action" type="button" data-ml-action="stop">⏹ Zaustavi</button>'+
-      '<button id="ml-export" class="action" type="button" data-ml-action="export">⬇ Izvezi rute ('+saved.length+')</button></div>'+
-      '<p class="muted ml-footnote">Konfiguracija rev. '+window.MaliConfig.revision()+' ('+window.MaliConfig.source()+') · '+N+'×'+N+'. Samostalni pokušaji koriste objavljeni navigacijski model.</p>'+
+      '<div class="ml-actions"><button class="action" type="button" data-ml-action="new">↻ New maze</button>'+
+      '<button id="ml-auto" class="action" type="button" data-ml-action="auto">🧠 Try on my own</button>'+
+      '<button id="ml-stop" class="action" type="button" data-ml-action="stop">⏹ Stop</button>'+
+      '<button id="ml-export" class="action" type="button" data-ml-action="export">⬇ Export routes ('+saved.length+')</button></div>'+
+      '<p class="muted ml-footnote">Configuration rev. '+window.MaliConfig.revision()+' ('+window.MaliConfig.source()+') · '+N+'×'+N+'. Autonomous attempts use the published navigation model.</p>'+
       '<p id="ml-cloud-status" class="muted ml-footnote">'+
         (window.MaliCloud && window.MaliCloud.navigationMessage
           ? window.MaliCloud.navigationMessage()
-          : 'Rute su spremljene lokalno.')+'</p>');
+          : 'Routes are saved locally.')+'</p>');
   }
   function update(message){
     // Never re-open the modal on each move. This also preserves focus and grid dimensions.
     const board=el('ml-board');if(!board)return;
     board.innerHTML=cells();
-    el('ml-stats').innerHTML='Koraci: <b>'+world.moves+'</b> · Otkriveno: <b>'+world.known.size+'/'+world.walls.size+'</b> · Udarci: <b>'+world.hits+'</b>';
+    el('ml-stats').innerHTML='Steps: <b>'+world.moves+'</b> · Discovered: <b>'+world.known.size+'/'+world.walls.size+'</b> · Bumps: <b>'+world.hits+'</b>';
     el('ml-message').textContent=message;
     if(world.done){
       el('ml-controlslot').innerHTML=resultHtml();
-      el('ml-export').textContent='⬇ Izvezi rute ('+saved.length+')';
+      el('ml-export').textContent='⬇ Export routes ('+saved.length+')';
+      showCompletion();
     }
     if(el('ml-cloud-status') && window.MaliCloud && window.MaliCloud.navigationMessage)
       el('ml-cloud-status').textContent=window.MaliCloud.navigationMessage();
+  }
+  function showCompletion(){
+    if(!world?.done||el('ml-complete'))return;
+    const nick=window.MaliTeachers?.nickname?.()||'Teacher';
+    el('modalContent').insertAdjacentHTML('beforeend',
+      '<div class="ml-complete" id="ml-complete" role="dialog" aria-modal="true" aria-labelledby="ml-complete-title">'+
+      '<div class="ml-complete-card"><h2 id="ml-complete-title">Great job!</h2><p id="ml-complete-message"></p>'+
+      '<div class="ml-complete-actions"><button type="button" class="action" data-ml-action="train-again">Train me more</button>'+
+      '<button type="button" class="action" data-ml-action="finish">Finish</button></div></div></div>');
+    el('ml-complete-message').textContent=world.usedAuto
+      ?'I reached the ball! Thank you, '+nick+', for practicing with me!'
+      :'Congratulations, '+nick+'! You successfully showed me how to reach the ball!';
+    el('ml-complete').querySelector('button').focus();
   }
   function solved(){
     world.done=true;
@@ -334,8 +344,8 @@
       ctx.s.energy=Math.max(0,(ctx.s.energy||0)-5);
       ctx.persist();ctx.render();
       ctx.speak('Bravo! 🐾',world.autoInterrupted
-        ?'Pokušaj je prekinut: nema XP-a ni spremljene lekcije.'
-        :'Mali je stigao do cilja.');
+        ?'This attempt was interrupted: no XP or saved lesson.'
+        :'Mali reached the goal.');
       return;
     }
     const entry={
@@ -354,7 +364,7 @@
     ctx.s.xp=(ctx.s.xp||0)+8;
     ctx.s.joy=Math.min(100,(ctx.s.joy||0)+6);
     ctx.s.energy=Math.max(0,(ctx.s.energy||0)-5);
-    ctx.persist();ctx.render();ctx.speak('Bravo! 🐾','+8 XP. Tvoja ruta je zabilježena.');
+    ctx.persist();ctx.render();ctx.speak('Bravo! 🐾','+8 XP. Your route has been recorded.');
   }
   function move(direction,byAuto){
     if(!world||world.done||!DIR[direction])return false;
@@ -377,35 +387,42 @@
       world.visits.set(pos(x,y),(world.visits.get(pos(x,y))||0)+1);
       if(byAuto)world.previous=direction;
     }
-    let msg=blocked?'Ovdje ne mogu proći!':'Idemo dalje!';
+    let msg=blocked?'I cannot go that way!':'Let us keep going!';
     const target=world.goals[world.targetIndex];
     if(!blocked&&x===target[0]&&y===target[1]){
       world.targetIndex++;
       if(world.helpActive)recordCorrection();
-      if(world.targetIndex===world.goals.length){solved();msg='Sve loptice skupljene!';}
-      else msg='Bravo! Sada loptica broj '+(world.targetIndex+1)+'.';
+      if(world.targetIndex===world.goals.length){solved();msg='All balls collected!';}
+      else msg='Great! Now ball '+(world.targetIndex+1)+'.';
     }
-    update(world.done&&world.storageError?'Ruta se nije spremila.':msg);
+    update(world.done&&world.storageError?'The route could not be saved.':msg);
     return !blocked;
   }
   function exportAll(){
-    if(!saved.length){el('ml-message').textContent='Najprije završi barem jedan labirint.';return;}
+    if(!saved.length){el('ml-message').textContent='Complete at least one maze first.';return;}
     const data={format:KEY,exported_at:new Date().toISOString(),lessons:saved};
     const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob),a=document.createElement('a');
-    a.href=url;a.download='mali-labirint-'+new Date().toISOString().slice(0,10)+'.json';
+    a.href=url;a.download='mali-maze-'+new Date().toISOString().slice(0,10)+'.json';
     document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
   }
   window.MaliMaze={
     open:function(context){ctx=context;newMaze();},
     handleClick:function(event){
+      const tile=event.target.closest('.ml-cell');
+      if(tile&&!world.done&&Date.now()>=ignoreClickUntil){
+        const tx=Number(tile.dataset.mlX),ty=Number(tile.dataset.mlY);
+        const dx=tx-world.dog[0],dy=ty-world.dog[1];
+        if(dx||dy)move(Math.abs(dx)>=Math.abs(dy)?(dx<0?'left':'right'):(dy<0?'up':'down'),false);
+        return;
+      }
       const btn=event.target.closest('[data-ml-dir],[data-ml-action]');if(!btn)return;
       const d=btn.getAttribute('data-ml-dir'),a=btn.getAttribute('data-ml-action');
       if(d){
-        // Pointerdown already performed this move; suppress its synthetic click.
-        if(pointerButton===btn){pointerButton=null;return;}
+        // One click or tap = one step.
         move(d,false);
-      }else if(a==='new')newMaze();
+      }else if(a==='new'||a==='train-again')newMaze();
+      else if(a==='finish'){stopAuto();stopHold();ctx.close?.();}
       else if(a==='export')exportAll();else if(a==='auto')void tryAutonomy();
       else if(a==='stop'){
         stopHold();swipeStart=null;
@@ -418,8 +435,8 @@
         }
         stopAuto();controlsState();
         update(interrupted
-          ?'Samostalni pokušaj je prekinut. Možeš nastaviti ručno, ali bez XP-a i nove lekcije.'
-          :'Zaustavljeno. Možeš nastaviti ručno ili otvoriti novi labirint.');
+          ?'Autonomous attempt interrupted. You can continue manually, but without XP or a new lesson.'
+          :'Stopped. Continue manually or start a new maze.');
       }
       else if(a==='help')beginHelp();
     }
@@ -443,11 +460,7 @@
   document.addEventListener('pointerdown',function(e){
     if(!el('ml-board')||el('overlay').hidden||!e.isPrimary)return;
     const button=e.target.closest&&e.target.closest('[data-ml-dir]');
-    if(button&&e.button===0){
-      pointerButton=button;
-      startHold(button.getAttribute('data-ml-dir'),{type:'pointer',id:e.pointerId});
-      return;
-    }
+    if(button)return; // Click works for mouse and touch.
     // A finger gesture may start anywhere in the maze dialog, not just
     // on the tiles. Interactive controls must keep their native click action.
     if(e.pointerType!=='touch'&&e.pointerType!=='pen')return;
@@ -457,18 +470,21 @@
     swipeStart={id:e.pointerId,x:e.clientX,y:e.clientY};
     // Capturing on the modal prevents an overlay click accidentally closing
     // the maze when a swipe begins in the free space around the board.
-    const surface=overlay.querySelector('.modal');
-    try{if(surface)surface.setPointerCapture(e.pointerId);}catch(_){}
+    // Avoid pointer capture: it can swallow taps on Android.
   });
   document.addEventListener('pointerup',function(e){
-    if(held&&held.type==='pointer'&&held.id===e.pointerId)stopHold();
     if(!swipeStart||swipeStart.id!==e.pointerId)return;
     const swipe=swipeStart;swipeStart=null;
     const direction=swipeDirection(e.clientX-swipe.x,e.clientY-swipe.y);
-    if(direction)move(direction,false);
+    if(direction){
+      const board=el('ml-board'),tile=board?board.getBoundingClientRect().width/N:35;
+      const distance=Math.max(Math.abs(e.clientX-swipe.x),Math.abs(e.clientY-swipe.y));
+      const count=Math.min(4,Math.max(1,Math.floor(distance/Math.max(22,tile))));
+      ignoreClickUntil=Date.now()+450;
+      for(let i=0;i<count;i++)if(!move(direction,false))break;
+    }
   });
   document.addEventListener('pointercancel',function(e){
-    if(held&&held.type==='pointer'&&held.id===e.pointerId)stopHold();
     if(swipeStart&&swipeStart.id===e.pointerId)swipeStart=null;
   });
   window.addEventListener('blur',function(){stopHold();swipeStart=null;});

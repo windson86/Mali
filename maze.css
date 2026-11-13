@@ -37,3 +37,43 @@
 .ml-paw-2{opacity:.40}
 .ml-paw-3{opacity:.65}
 .ml-paw-4{opacity:.85}
+
+/* Roomy responsive maze: fill nearly the whole screen, including Android tablets. */
+#overlay:has(#ml-board){position:fixed;inset:0;width:100vw;height:100dvh;padding:1.5dvh 1vw;display:grid;place-items:center;overflow:hidden;overscroll-behavior:none;touch-action:none}
+#overlay:has(#ml-board) .modal{width:98vw;max-width:none;height:97dvh;max-height:none;min-width:0;min-height:0;padding:10px 12px 12px;display:flex;flex-direction:column;overflow:hidden;border-radius:17px;box-shadow:0 5px 12px #0004}
+#overlay:has(#ml-board) #modalTitle{flex:none;margin:0 25px 5px;font-size:clamp(16px,2.4vh,23px)}
+#overlay:has(#ml-board) #modalContent{display:grid;grid-template-columns:minmax(0,1fr) minmax(192px,260px);grid-template-rows:repeat(7,auto) 1fr;align-content:center;align-items:center;gap:5px 12px;flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+#overlay:has(#ml-board) .ml-board{grid-column:1;grid-row:1 / span 8;width:min(100%,calc(92dvh - 67px));max-width:none;max-height:calc(92dvh - 67px);height:auto;aspect-ratio:1;align-self:center;justify-self:center;gap:clamp(1px,.25vh,3px);padding:clamp(2px,.5vh,5px);border-width:3px;touch-action:none}
+#overlay:has(#ml-board) .ml-help{grid-column:2;grid-row:1;margin:0!important;font-size:clamp(10px,1.7vh,12px)!important;line-height:1.25}
+#overlay:has(#ml-board) .ml-stats{grid-column:2;grid-row:2;margin:0;line-height:1.2;font-size:clamp(10px,1.6vh,12px)}
+#overlay:has(#ml-board) .ml-message{grid-column:2;grid-row:3;margin:0!important;min-height:2.5em!important;font-size:clamp(11px,1.8vh,13px);line-height:1.3!important}
+#overlay:has(#ml-board) #ml-controlslot{grid-column:2;grid-row:4}
+#overlay:has(#ml-board) .ml-controls{margin:5px auto;grid-template-columns:repeat(3,clamp(34px,5.5vh,49px));gap:4px}
+#overlay:has(#ml-board) .ml-controls .action{padding:3px;min-height:clamp(32px,5.8vh,43px)}
+#overlay:has(#ml-board) #modalContent>.ml-actions{grid-column:2;grid-row:5;margin:3px auto}
+#overlay:has(#ml-board) #modalContent>.ml-actions .action{padding:5px 6px;font-size:clamp(10px,1.6vh,12px)}
+#overlay:has(#ml-board) .ml-footnote{grid-column:2;margin:1px!important;line-height:1.2}
+#overlay:has(#ml-board) .ml-cell{cursor:pointer}
+#overlay:has(#ml-board) .ml-cell:active{outline:2px solid #3b83d8}
+.ml-complete{position:absolute;inset:0;z-index:11;background:#222a2d99;display:flex;align-items:center;justify-content:center;padding:16px;touch-action:manipulation}
+.ml-complete-card{background:#fffdf3;border:3px solid #353037;border-radius:21px;box-shadow:5px 6px 0 #353037;padding:26px 21px;max-width:min(420px,94vw);width:100%;text-align:center}
+.ml-complete-card h2{margin:0 0 12px!important;font-size:22px}
+.ml-complete-card p{margin:0 0 20px!important;font-size:16px!important}
+.ml-complete-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.ml-complete-actions button{min-height:43px}
+@media(max-width:720px) and (orientation:portrait){
+ #overlay:has(#ml-board){padding:0}
+ #overlay:has(#ml-board) .modal{width:100vw;height:100dvh;border:0;border-radius:0;padding:5px 7px}
+ #overlay:has(#ml-board) #modalContent{display:flex;flex-direction:column;justify-content:flex-start;gap:2px;overflow-y:auto;scrollbar-width:none}
+ #overlay:has(#ml-board) .ml-board{width:min(calc(100vw - 17px),calc(100dvh - 220px));max-height:none;flex-shrink:0;margin:1px auto}
+ #overlay:has(#ml-board) .ml-help{font-size:11px!important;margin:0!important}
+ #overlay:has(#ml-board) .ml-message{min-height:1.3em!important}
+ #overlay:has(#ml-board) .ml-stats,#overlay:has(#ml-board) .ml-message{flex:none}
+ #overlay:has(#ml-board) .ml-footnote{display:none}
+ #overlay:has(#ml-board) #ml-controlslot{flex:none}
+}
+@media(max-height:490px) and (orientation:landscape){
+ #overlay:has(#ml-board) .modal{padding:4px 9px}
+ #overlay:has(#ml-board) .ml-board{width:min(100%,calc(92dvh - 40px));max-height:calc(92dvh - 40px)}
+ #overlay:has(#ml-board) .ml-footnote{display:none}
+}

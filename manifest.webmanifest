@@ -1,0 +1,18 @@
+{
+  "name": "MALI – My Little World",
+  "short_name": "MALI",
+  "description": "Teach Mali, play and explore together.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#e8f4ed",
+  "theme_color": "#a7d9aa",
+  "icons": [
+    {
+      "src": "/mali-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

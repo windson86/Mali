@@ -103,3 +103,15 @@ Privremena web adresa: https://malipesek.netlify.app . Domena `mali.com.hr` bit 
 - `firebase.rules.json` dobiva tri sigurno odvojena nova čvora: javno čitanje objavljenog modela bez klijentskog pisanja te prijavu incidenata i korekcija samo pod osobnim anonimnim UID-om. Za rad potrebno je **ručno zamijeniti i objaviti sva pravila u Firebase Console → Realtime Database → Rules**. GitHub promjene same ne primjenjuju Firebase pravila.
 - Lokalni Control Center v0.2 ima karticu Navigacija: broj petlji, broj riješenih korekcija, skicu labirinta po incidentu, objavu istreniranog `brain/navigation-active.json`, te izbor `loop_repeats` u kartici Labirint. Postojeći lokalni servisni ključ kopira se samo na korisnikov laptop; ne nalazi se u GitHubu niti u ZIP-u.
 - Model treba prvo istrenirati lokalnim Python alatom (v0.2), zatim **objaviti u konzoli**. Bez ovog koraka web ne može predviđati smjerove. Stari modeli boja i stare rute ostaju netaknuti.
+
+## November 2026 interface update
+
+- Player-facing room, color-school, teacher and maze labels are in English. **Internal color keys remain unchanged** to preserve existing collected lessons and trained models.
+- Maze uses a responsive wide-screen layout and a fullscreen portrait layout. Click/tap a tile to move one step in its direction; swipe to move up to four steps; arrows and keyboard remain available.
+- Successful maze completion offers **Train me more** or **Finish**, with the teacher nickname.
+- Walk mini-game uses seven colored circles, then thanks the teacher by nickname.
+- The puppy's position avoids interactive room objects when a collision-free location exists.
+- PWA manifest and optional Web Notifications warn at 10% energy with **“Hey Teacher, please put me to sleep!”**. This **works while the web app is running**, or when it becomes active again. **Reliable background notifications when all browser tabs are closed are not implemented**; they will require a server-initiated Web Push/FCM system and device subscriptions. Alerts are opt-in and only re-arm after sleeping above 30% energy.
+- Firebase contents and existing saved lessons are not migrated or cleared by this interface update.
+
+Testing: all modified JavaScript passes syntax checks. Device-specific browser interaction, responsive layouts, and Netlify deploy must still be confirmed on the user's devices.
