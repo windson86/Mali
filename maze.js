@@ -477,11 +477,10 @@
     const swipe=swipeStart;swipeStart=null;
     const direction=swipeDirection(e.clientX-swipe.x,e.clientY-swipe.y);
     if(direction){
-      const board=el('ml-board'),tile=board?board.getBoundingClientRect().width/N:35;
-      const distance=Math.max(Math.abs(e.clientX-swipe.x),Math.abs(e.clientY-swipe.y));
-      const count=Math.min(4,Math.max(1,Math.floor(distance/Math.max(22,tile))));
-      ignoreClickUntil=Date.now()+450;
-      for(let i=0;i<count;i++)if(!move(direction,false))break;
+      // Android: one completed swipe must always equal exactly one grid step.
+      // Suppress the synthetic click that can follow touchend.
+      ignoreClickUntil=Date.now()+600;
+      move(direction,false);
     }
   });
   document.addEventListener('pointercancel',function(e){
