@@ -77,3 +77,7 @@
  #overlay:has(#ml-board) .ml-board{width:min(100%,calc(92dvh - 40px));max-height:calc(92dvh - 40px)}
  #overlay:has(#ml-board) .ml-footnote{display:none}
 }
+
+/* Android tablet fixes: hidden maze really disappears, and X stays tappable. */
+#overlay[hidden]{display:none!important}
+#overlay:has(#ml-board) .close{z-index:20;top:8px;right:8px;min-width:44px;min-height:44px;display:grid;place-items:center;touch-action:manipulation;pointer-events:auto}

@@ -15,3 +15,6 @@
 .ml-t-ranking li{display:grid;grid-template-columns:34px 1fr auto;gap:8px;align-items:center;padding:10px 5px;border-bottom:1px solid #b0b0b0;font-size:14px}
 .ml-t-rank{font-weight:900}
 @media(max-width:450px){#ml-teachers-button{top:73px;right:8px;font-size:11px;padding:5px 7px}.ml-teachers-card{padding:12px}}
+
+/* Never float the teacher launcher over an active maze or the close X. */
+body:has(#overlay:not([hidden]) #ml-board) #ml-teachers-button{display:none!important}

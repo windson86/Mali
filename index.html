@@ -94,8 +94,8 @@ body{margin:0}button{font:inherit}#game{position:relative;height:100dvh;min-heig
    $('bubble').style.left=x+'%';$('bubble').style.top='calc('+y+'% - 118px)';
    $('dog').dataset.mood=emotion;persist();setTimeout(render,1100);
  }
- function open(type,title,html){modalType=type;$('modalTitle').textContent=title;$('modalContent').innerHTML=html;$('overlay').hidden=false}
- function close(){$('overlay').hidden=true;modalType=''}$('close').onclick=close;$('overlay').addEventListener('click',e=>{if(e.target===$('overlay'))close()});
+ function open(type,title,html){modalType=type;$('modalTitle').textContent=title;$('modalContent').innerHTML=html;$('overlay').hidden=false;const teachers=$('ml-teachers-button');if(teachers)teachers.hidden=type==='maze'}
+ function close(){$('overlay').hidden=true;modalType='';const teachers=$('ml-teachers-button');if(teachers)teachers.hidden=false}$('close').onclick=close;$('overlay').addEventListener('click',e=>{if(e.target===$('overlay'))close()});
  $('house').onclick=()=>{tick();go(76,53,s.sleep?'excited':'sleep');s.sleep=!s.sleep;s.energy=clamp(s.energy+(s.sleep?0:3));persist();render();speak(s.sleep?'Good night! 💤':'Good morning! ☀️',s.sleep?'Mali is sleeping and restoring energy.':'Mali woke up.')};
  $('bowl').onclick=()=>{tick();if(s.sleep){speak('Zzz…','Wake him up by clicking the house.');return}go(window.innerWidth<=640?29:49,window.innerWidth<=640?72:73);s.food=clamp(s.food+18);s.joy=clamp(s.joy+3);s.xp++;persist();render();speak('Yum! 🍖','Food increased. +1 XP.')};
  $('dog').onclick=()=>{tick();if(s.sleep){speak('Zzz…','Mali is sleeping.');return}s.joy=clamp(s.joy+5);persist();$('dog').dataset.mood='excited';speak('I love cuddles! ❤️','Happiness +5.');render()};$('dog').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('dog').click()}};
