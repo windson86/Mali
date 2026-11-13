@@ -22,8 +22,8 @@
   button.setAttribute('aria-haspopup','dialog');button.setAttribute('aria-controls','ml-teachers-dialog');
   const cover=document.createElement('div');
   cover.id='ml-teachers-cover';cover.hidden=true;
-  cover.innerHTML='<section id="ml-teachers-dialog" class="ml-teachers-card" role="dialog" aria-modal="true" aria-label="Mali's Teachers">'+
-    '<div class="ml-teachers-head"><strong>🏆 Mali's Teachers</strong><button type="button" data-t-action="close" aria-label="Close">✕</button></div>'+
+  cover.innerHTML='<section id="ml-teachers-dialog" class="ml-teachers-card" role="dialog" aria-modal="true" aria-label="Mali’s Teachers">'+
+    '<div class="ml-teachers-head"><strong>🏆 Mali’s Teachers</strong><button type="button" data-t-action="close" aria-label="Close">✕</button></div>'+
     '<div id="ml-teachers-content"></div></section>';
   document.body.appendChild(button);document.body.appendChild(cover);
   button.addEventListener('click',()=>show());
