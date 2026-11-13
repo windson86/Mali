@@ -4,15 +4,11 @@
   let N=8, START=[0,7], GOAL=[7,0]; const KEY='mali-navigation-lessons-v1';
   const DIR={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
   let world=null, ctx=null, saved=[], autoTimer=null;
-  // Full viewport on phones. Keep desktop modal and the rest of Mali unchanged.
-  const mazeScreenStyle=document.createElement('style');
-  mazeScreenStyle.id='mali-maze-mobile-screen';
-  mazeScreenStyle.textContent="\n/* Fullscreen maze on mobile, with large square cells and compact controls.\n   CSS is co-located with the maze module so this ships in one commit/deploy. */\n@media (max-width:700px) {\n #overlay:has(#ml-board) { position:fixed; inset:0; width:100%; height:100dvh; padding:0; display:block; overflow:hidden; touch-action:none; overscroll-behavior:none; }\n #overlay:has(#ml-board) .modal { width:100vw; height:100dvh; max-height:100dvh; border:0; border-radius:0; box-shadow:none; padding:6px 6px 8px; display:flex; flex-direction:column; overflow:hidden; touch-action:none; user-select:none; }\n #overlay:has(#ml-board) #modalTitle { margin:0 34px 2px; font-size:17px; line-height:26px; flex-shrink:0; }\n #overlay:has(#ml-board) .close { z-index:3; top:3px; right:4px; padding:3px 8px; }\n #overlay:has(#ml-board) #modalContent { flex:1; min-height:0; display:flex; flex-direction:column; overflow-y:auto; scrollbar-width:none; overscroll-behavior:contain; }\n #overlay:has(#ml-board) #modalContent::-webkit-scrollbar { display:none; }\n #overlay:has(#ml-board) .ml-help { margin:0!important; font-size:11px!important; line-height:1.25; }\n #overlay:has(#ml-board) .ml-board { width:min(calc(100vw - 12px), calc(100dvh - 250px)); max-width:100%; max-height:calc(100dvh - 250px); aspect-ratio:1; flex-shrink:0; margin:4px auto 3px; gap:2px; padding:2px; border-width:3px; --ml-font:clamp(12px,3.8vw,22px)!important; }\n #overlay:has(#ml-board) .ml-stats { margin:2px auto 0; font-size:11px; }\n #overlay:has(#ml-board) .ml-message { margin:2px auto!important; min-height:3.8em!important; font-size:11px; line-height:1.25!important; }\n #overlay:has(#ml-board) .ml-controls { grid-template-columns:repeat(3,41px); gap:3px; margin:2px auto; }\n #overlay:has(#ml-board) .ml-controls .action { min-height:34px; padding:3px; }\n #overlay:has(#ml-board) .ml-actions { margin:3px auto; gap:5px; }\n #overlay:has(#ml-board) .ml-actions .action { font-size:10px; padding:5px 7px; }\n #overlay:has(#ml-board) .ml-result { padding:5px; font-size:11px; }\n #overlay:has(#ml-board) .ml-footnote { display:none; }\n}\n@media (max-width:700px) and (max-height:570px) {\n #overlay:has(#ml-board) .ml-board { width:min(calc(100vw - 12px), calc(100dvh - 200px)); max-height:calc(100dvh - 200px); }\n #overlay:has(#ml-board) .ml-controls { grid-template-columns:repeat(3,35px); }\n #overlay:has(#ml-board) .ml-controls .action { min-height:29px; }\n}\n";
-  document.head.appendChild(mazeScreenStyle);
+  // Responsive fullscreen maze layout is in maze.css.
   const SWIPE_MIN_PX=10;
   const KEY_TO_DIR={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',
     w:'up',s:'down',a:'left',d:'right'};
-  let held=null,holdTimer=null,swipeStart=null,pointerButton=null;
+  let held=null,holdTimer=null,swipeStart=null,ignoreClickUntil=0;
   // A swipe is always one grid step. Diagonals take their dominant axis.
   function swipeDirection(dx,dy){
     if(Math.hypot(dx,dy)<SWIPE_MIN_PX)return null;
@@ -262,7 +258,7 @@
       const pawLevel=visits<=2?1:visits<=5?2:visits<=10?3:4;
       const paw=visits>0&&!dog&&!rock&&!pendingBall
         ?'<span class="ml-paw ml-paw-'+pawLevel+'" aria-hidden="true">🐾</span>':'';
-      out+='<div class="ml-cell ml-'+kind+'" role="gridcell" aria-label="'+
+      out+='<div class="ml-cell ml-'+kind+'" data-ml-x="'+x+'" data-ml-y="'+y+'" role="gridcell" aria-label="'+
         (dog?'Mali':pendingBall?'Loptica '+(i+1):rock?'Prepreka':'Prazno polje')+
         (!dog&&!rock&&visits?'; posjećeno '+visits+' puta':'')+'">'+what+paw+'</div>';
     }
@@ -321,9 +317,23 @@
     if(world.done){
       el('ml-controlslot').innerHTML=resultHtml();
       el('ml-export').textContent='⬇ Izvezi rute ('+saved.length+')';
+      showCompletion();
     }
     if(el('ml-cloud-status') && window.MaliCloud && window.MaliCloud.navigationMessage)
       el('ml-cloud-status').textContent=window.MaliCloud.navigationMessage();
+  }
+  function showCompletion(){
+    if(!world?.done||el('ml-complete'))return;
+    const nick=window.MaliTeachers?.nickname?.()||'Teacher';
+    el('modalContent').insertAdjacentHTML('beforeend',
+      '<div class="ml-complete" id="ml-complete" role="dialog" aria-modal="true" aria-labelledby="ml-complete-title">'+
+      '<div class="ml-complete-card"><h2 id="ml-complete-title">Great job!</h2><p id="ml-complete-message"></p>'+
+      '<div class="ml-complete-actions"><button type="button" class="action" data-ml-action="train-again">Train me more</button>'+
+      '<button type="button" class="action" data-ml-action="finish">Finish</button></div></div></div>');
+    el('ml-complete-message').textContent=world.usedAuto
+      ?'I reached the ball! Thank you, '+nick+', for practicing with me!'
+      :'Congratulations, '+nick+'! You successfully showed me how to reach the ball!';
+    el('ml-complete').querySelector('button').focus();
   }
   function solved(){
     world.done=true;
@@ -399,13 +409,20 @@
   window.MaliMaze={
     open:function(context){ctx=context;newMaze();},
     handleClick:function(event){
+      const tile=event.target.closest('.ml-cell');
+      if(tile&&!world.done&&Date.now()>=ignoreClickUntil){
+        const tx=Number(tile.dataset.mlX),ty=Number(tile.dataset.mlY);
+        const dx=tx-world.dog[0],dy=ty-world.dog[1];
+        if(dx||dy)move(Math.abs(dx)>=Math.abs(dy)?(dx<0?'left':'right'):(dy<0?'up':'down'),false);
+        return;
+      }
       const btn=event.target.closest('[data-ml-dir],[data-ml-action]');if(!btn)return;
       const d=btn.getAttribute('data-ml-dir'),a=btn.getAttribute('data-ml-action');
       if(d){
-        // Pointerdown already performed this move; suppress its synthetic click.
-        if(pointerButton===btn){pointerButton=null;return;}
+        // One click or tap = one step.
         move(d,false);
-      }else if(a==='new')newMaze();
+      }else if(a==='new'||a==='train-again')newMaze();
+      else if(a==='finish'){stopAuto();stopHold();ctx.close?.();}
       else if(a==='export')exportAll();else if(a==='auto')void tryAutonomy();
       else if(a==='stop'){
         stopHold();swipeStart=null;
@@ -443,11 +460,7 @@
   document.addEventListener('pointerdown',function(e){
     if(!el('ml-board')||el('overlay').hidden||!e.isPrimary)return;
     const button=e.target.closest&&e.target.closest('[data-ml-dir]');
-    if(button&&e.button===0){
-      pointerButton=button;
-      startHold(button.getAttribute('data-ml-dir'),{type:'pointer',id:e.pointerId});
-      return;
-    }
+    if(button)return; // Click works for mouse and touch.
     // A finger gesture may start anywhere in the maze dialog, not just
     // on the tiles. Interactive controls must keep their native click action.
     if(e.pointerType!=='touch'&&e.pointerType!=='pen')return;
@@ -457,18 +470,21 @@
     swipeStart={id:e.pointerId,x:e.clientX,y:e.clientY};
     // Capturing on the modal prevents an overlay click accidentally closing
     // the maze when a swipe begins in the free space around the board.
-    const surface=overlay.querySelector('.modal');
-    try{if(surface)surface.setPointerCapture(e.pointerId);}catch(_){}
+    // Avoid pointer capture: it can swallow taps on Android.
   });
   document.addEventListener('pointerup',function(e){
-    if(held&&held.type==='pointer'&&held.id===e.pointerId)stopHold();
     if(!swipeStart||swipeStart.id!==e.pointerId)return;
     const swipe=swipeStart;swipeStart=null;
     const direction=swipeDirection(e.clientX-swipe.x,e.clientY-swipe.y);
-    if(direction)move(direction,false);
+    if(direction){
+      const board=el('ml-board'),tile=board?board.getBoundingClientRect().width/N:35;
+      const distance=Math.max(Math.abs(e.clientX-swipe.x),Math.abs(e.clientY-swipe.y));
+      const count=Math.min(4,Math.max(1,Math.floor(distance/Math.max(22,tile))));
+      ignoreClickUntil=Date.now()+450;
+      for(let i=0;i<count;i++)if(!move(direction,false))break;
+    }
   });
   document.addEventListener('pointercancel',function(e){
-    if(held&&held.type==='pointer'&&held.id===e.pointerId)stopHold();
     if(swipeStart&&swipeStart.id===e.pointerId)swipeStart=null;
   });
   window.addEventListener('blur',function(){stopHold();swipeStart=null;});
