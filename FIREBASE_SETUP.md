@@ -49,3 +49,11 @@ Skript kreira `lekcije/mali-zajednicke-lekcije.json`. Kreni s provjerom učestal
 - **Objaviti ažurirana Firebase pravila ručno** u Firebase Console → Realtime Database → Rules; objava na Netlifyu ne može sama objaviti Rules. Dok se to ne napravi, postojeća igra radi, a vrijeme ostaje lokalno do sljedećeg pokušaja slanja.
 - Kontrolni centar v0.5 na laptopu može izračunati danas/tjedan/ukupno i napredak prema 15 h po igraču; tjedan je ponedjeljak–nedjelja prema UTC danima.
 - Sati ranije od instalacije ne mogu se rekonstruirati. Aktivnost je indikativna i klijentska te nije otporna na sve oblike lažiranja; ne koristiti je kao nepobitan dokaz za nagrade.
+
+## Prijave problema / prijedlozi (v0.6)
+- Gumb **Report a problem** u web igri otvara obrazac: kategorija, dio igre i opis (10–500 znakova).
+- Korisnički Firebase Anonymous UID i postojeći nadimak povezuju prijavu s igračem. Ne prikupljaju se e-mail, IP, GPS ni slobodni kontakt podaci. Igrač je zamoljen da ne šalje osobne podatke u opis.
+- U uobičajenom sučelju korisnik može poslati najviše tri prijave po UTC danu. Ograničenje nije potpuno otporno na zlonamjerne klijente ni nove anonimne račune.
+- Zapis je u `userReports/v1/<uid>/YYYY-MM-DD-1..3`; Firebase RTDB klijenti ne mogu čitati prijave, a mogu samo dodati svoj novi zapis pod pravilima koja ograničavaju polja i veličinu.
+- Lokalni Control Center v0.6 koristi Firebase Admin SDK za privatni pregled, te može označiti prijavu **Riješeno**. Nema automatske poruke igraču.
+- **Ručno objavi nova pravila** iz `firebase.rules.json` u Firebase Console → Realtime Database → Rules; samo objavljivanje web igre ne postavlja RTDB pravila.
