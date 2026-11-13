@@ -100,12 +100,12 @@ body{margin:0}button{font:inherit}#game{position:relative;height:100dvh;min-heig
  $('bowl').onclick=()=>{tick();if(s.sleep){speak('Zzz…','Wake him up by clicking the house.');return}go(window.innerWidth<=640?29:49,window.innerWidth<=640?72:73);s.food=clamp(s.food+18);s.joy=clamp(s.joy+3);s.xp++;persist();render();speak('Yum! 🍖','Food increased. +1 XP.')};
  $('dog').onclick=()=>{tick();if(s.sleep){speak('Zzz…','Mali is sleeping.');return}s.joy=clamp(s.joy+5);persist();$('dog').dataset.mood='excited';speak('I love cuddles! ❤️','Happiness +5.');render()};$('dog').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('dog').click()}};
  $('ball').onclick=()=>{tick();if(s.sleep){speak('Zzz…','Wake Mali up first.');return}go(72,67);window.MaliColors.open({open,s,persist,render,speak});};
- $('walking').onclick=()=>{tick();if(s.sleep){speak('Zzz…','Prvo probudi Malog.');return}go(73,80);steps=0;open('walk','Walk with Mali',`<p>Tap the colored circles to help me move forward!</p><div id="walkStage"><div id="walkPuppy" aria-hidden="true">🐶</div><button type="button" id="walkTarget" aria-label="Step 1 of 7"></button></div><p id="walkStepCount"><strong>0 / 7</strong> steps</p>`);walkTarget()};
- $('training').onclick=()=>{tick();if(s.sleep){speak('Zzz…','Prvo probudi Malog.');return}go(34,77);window.MaliMaze.open({open,close,s,persist,render,speak});};
+ $('walking').onclick=()=>{tick();if(s.sleep){speak('Zzz…','Wake Mali up first.');return}go(73,80);steps=0;open('walk','Walk with Mali',`<p>Tap the colored circles to help me move forward!</p><div id="walkStage"><div id="walkPuppy" aria-hidden="true">🐶</div><button type="button" id="walkTarget" aria-label="Step 1 of 7"></button></div><p id="walkStepCount"><strong>0 / 7</strong> steps</p>`);walkTarget()};
+ $('training').onclick=()=>{tick();if(s.sleep){speak('Zzz…','Wake Mali up first.');return}go(34,77);window.MaliMaze.open({open,close,s,persist,render,speak});};
  $('modalContent').addEventListener('click',e=>{
  if(modalType.indexOf('colors-')===0)window.MaliColors.handleClick(e);
  if(modalType==='maze')window.MaliMaze.handleClick(e);
- if(e.target.id==='walkTarget'&&modalType==='walk'){steps++;$('walkPuppy').style.left=(10+steps*10)+'%';$('walkStepCount').innerHTML='<strong>'+steps+' / 7</strong> steps';if(steps>=7){s.walks++;s.fitness=clamp(s.fitness+2);s.energy=clamp(s.energy-9);s.food=clamp(s.food-4);s.joy=clamp(s.joy+10);s.xp+=10;persist();render();speak('Woof, thank you!','+10 XP, fitness +2.');showWalkEnd()}else walkTarget()}
+ if(e.target.closest?.('#walkTarget')&&modalType==='walk'){steps++;$('walkPuppy').style.left=(10+steps*10)+'%';$('walkStepCount').innerHTML='<strong>'+steps+' / 7</strong> steps';if(steps>=7){s.walks++;s.fitness=clamp(s.fitness+2);s.energy=clamp(s.energy-9);s.food=clamp(s.food-4);s.joy=clamp(s.joy+10);s.xp+=10;persist();render();speak('Woof, thank you!','+10 XP, fitness +2.');showWalkEnd()}else walkTarget()}
  if(e.target.id==='walkFinish'&&modalType==='walk-done')close();
 
  });
