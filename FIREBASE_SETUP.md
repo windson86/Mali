@@ -41,3 +41,11 @@ Skript kreira `lekcije/mali-zajednicke-lekcije.json`. Kreni s provjerom učestal
 - **Obavezno ručno objaviti ažurirana pravila** iz `firebase.rules.json` u Firebase Console → Realtime Database → Rules → Publish. GitHub/Netlify objava ne mijenja automatski Firebase pravila.
 - Provjera: nakon objave pravila, otvoriti mali.com.hr na uređaju s nadimkom, otvoriti Firebase Console i provjeriti `playerCountries/v1/<uid>`. U simulatoru pravila provjeriti da anoniman korisnik ne može čitati taj put ni tuđe zapise.
 - Zemlja iz IP-a je samo procjena (VPN i mobilni operateri mogu promijeniti rezultat), a korisnički zapis nije neoboriv dokaz lokacije. Ne koristiti ga kao jedinu osnovu za isplatu nagrada.
+
+## Privatno mjerenje aktivnog vremena (v0.5)
+- `player-activity.js` bilježi procijenjeno aktivno vrijeme po anonimnom UID-u i UTC danu; samo kada je stranica u fokusu, vidljiva i korisnik je stvarno dodirnuo/kliknuo/pritisnuo tipku. Nakon 2 minute bez interakcije mjerenje staje.
+- Upis u `playerActivity/v1/<uid>/days/YYYY-MM-DD` radi se transakcijama u koracima do 30 sekundi. Firebase pravila ograničavaju učestalost novog upisa na najmanje 25 sekundi i potvrđuju vrijeme poslužitelja.
+- Pohrana sadrži samo dnevne sekunde i vrijeme zadnjeg uspješnog upisa; nema GPS-a, pune IP adrese, e-pošte ni podataka o isplatama.
+- **Objaviti ažurirana Firebase pravila ručno** u Firebase Console → Realtime Database → Rules; objava na Netlifyu ne može sama objaviti Rules. Dok se to ne napravi, postojeća igra radi, a vrijeme ostaje lokalno do sljedećeg pokušaja slanja.
+- Kontrolni centar v0.5 na laptopu može izračunati danas/tjedan/ukupno i napredak prema 15 h po igraču; tjedan je ponedjeljak–nedjelja prema UTC danima.
+- Sati ranije od instalacije ne mogu se rekonstruirati. Aktivnost je indikativna i klijentska te nije otporna na sve oblike lažiranja; ne koristiti je kao nepobitan dokaz za nagrade.
