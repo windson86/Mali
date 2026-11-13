@@ -18,7 +18,7 @@
     },
     maze:{size:8,blocked_percent:13,ball_count:1,vision_radius:2,ball_order:'sequential',loop_repeats:4}
   };
-  let config=defaults, source='zadano', lastRequest=0, inflight=null;
+  let config=defaults, source='default', lastRequest=0, inflight=null;
   function isNum(n,a,b){return typeof n==='number'&&Number.isFinite(n)&&n>=a&&n<=b;}
   function valid(raw){
     if(!raw||typeof raw!=='object'||raw.schema_version!==1||!raw.colors||!raw.maze)return null;
@@ -75,7 +75,7 @@
       try{localStorage.setItem(KEY,JSON.stringify(next));}catch(_){}
       return config;
     }).catch(err=>{
-      console.info('Mali: koristim prethodnu konfiguraciju; nema novog čitanja Firebasea.',err.message);
+      console.info('Mali: using previous configuration; Firebase refresh unavailable.',err.message);
       return config;
     }).finally(()=>{clearTimeout(timeout);inflight=null;});
     return inflight;
