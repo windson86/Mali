@@ -147,7 +147,7 @@
       context.render();
       context.speak('Thank you! 🐾', 'Lesson saved locally; Firebase will sync when available.');
     }
-    ui('lessonStatus').textContent = 'Saved: ' + label + '! Total ' + lessons.length + ' lessons. New ball coming…';
+    ui('lessonStatus').textContent = 'Saved: ' + englishLabel(label) + '! Total ' + lessons.length + ' lessons. New ball coming…';
     // The same lesson remains safely in localStorage even when the database is offline.
     if (window.MaliCloud) window.MaliCloud.enqueueMany([entry]);
     var finishedSample = sample;
