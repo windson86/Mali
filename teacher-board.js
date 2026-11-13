@@ -18,12 +18,12 @@
   function saveQueue(){try{localStorage.setItem(QUEUE_KEY,JSON.stringify(pending));}catch(_){}}
   function validNick(v){return /^[A-Za-z0-9_čćđšžČĆĐŠŽ-]{3,20}$/.test(v);}
   const button=document.createElement('button');
-  button.id='ml-teachers-button';button.type='button';button.textContent='🏆 Učitelji';
+  button.id='ml-teachers-button';button.type='button';button.textContent='🏆 Teachers';
   button.setAttribute('aria-haspopup','dialog');button.setAttribute('aria-controls','ml-teachers-dialog');
   const cover=document.createElement('div');
   cover.id='ml-teachers-cover';cover.hidden=true;
-  cover.innerHTML='<section id="ml-teachers-dialog" class="ml-teachers-card" role="dialog" aria-modal="true" aria-label="Malijevi učitelji">'+
-    '<div class="ml-teachers-head"><strong>🏆 Malijevi učitelji</strong><button type="button" data-t-action="close" aria-label="Zatvori">✕</button></div>'+
+  cover.innerHTML='<section id="ml-teachers-dialog" class="ml-teachers-card" role="dialog" aria-modal="true" aria-label="Mali's Teachers">'+
+    '<div class="ml-teachers-head"><strong>🏆 Mali's Teachers</strong><button type="button" data-t-action="close" aria-label="Close">✕</button></div>'+
     '<div id="ml-teachers-content"></div></section>';
   document.body.appendChild(button);document.body.appendChild(cover);
   button.addEventListener('click',()=>show());
@@ -31,34 +31,34 @@
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&open)hide();});
   function hide(){open=false;cover.hidden=true;button.focus();}
   function show(mode){open=true;cover.hidden=false;render(mode||(!nickname?'profile':'board'));const f=cover.querySelector('input');if(f)f.focus();}
-  function localMessage(){return error||(!ready?'Firebase se povezuje; nadimak se može spremiti lokalno.':'');}
+  function localMessage(){return error||(!ready?'Connecting to Firebase; your nickname can be saved locally.':'');}
   function render(mode){
     const dst=document.getElementById('ml-teachers-content');
     if(!dst)return;
     if(mode==='profile'||!nickname){
-      dst.innerHTML='<p>🐶 Bok! Kako da te zovem? Nadimak će se prikazivati na rang-listi.</p>'+
-        '<form id="ml-teachers-form"><label for="ml-teachers-nick">Nadimak (3–20 znakova)</label>'+
+      dst.innerHTML='<p>🐶 Hi! What should I call you? Your nickname will appear on the leaderboard.</p>'+
+        '<form id="ml-teachers-form"><label for="ml-teachers-nick">Nickname (3–20 characters)</label>'+
         '<input id="ml-teachers-nick" name="nickname" maxlength="20" autocomplete="nickname" value="'+esc(nickname)+'" required>'+
-        '<p class="ml-t-note">Slova, brojevi, _ i -. Bez e-maila i pravog imena. Nadimci zasad nisu jedinstveni.</p>'+
-        '<button type="submit" class="ml-t-primary">Spremi nadimak</button> '+
-        '<button type="button" data-t-action="skip">Ne sada</button></form>'+
+        '<p class="ml-t-note">Letters, numbers, _ and -. No email or real name. Nicknames do not have to be unique.</p>'+
+        '<button type="submit" class="ml-t-primary">Save nickname</button> '+
+        '<button type="button" data-t-action="skip">Not now</button></form>'+
         '<p class="ml-t-note" role="status">'+esc(localMessage())+'</p>';
       return;
     }
     const rows=makeRows(period);
     const yours=rows.findIndex(r=>r.uid===uid);
-    dst.innerHTML='<p class="ml-t-note">Pozdrav, <b>'+esc(nickname)+'</b>! Bodovi se priznaju za lekcije uspješno poslane u Firebase.</p>'+
-      '<div class="ml-t-tabs"><button type="button" data-t-period="week" aria-pressed="'+(period==='week')+'">Tjedan</button>'+
-      '<button type="button" data-t-period="month" aria-pressed="'+(period==='month')+'">Mjesec</button>'+
-      '<button type="button" data-t-period="all" aria-pressed="'+(period==='all')+'">Ukupno</button></div>'+
+    dst.innerHTML='<p class="ml-t-note">Hello, <b>'+esc(nickname)+'</b>! Points are awarded for lessons successfully uploaded to Firebase.</p>'+
+      '<div class="ml-t-tabs"><button type="button" data-t-period="week" aria-pressed="'+(period==='week')+'">Week</button>'+
+      '<button type="button" data-t-period="month" aria-pressed="'+(period==='month')+'">Month</button>'+
+      '<button type="button" data-t-period="all" aria-pressed="'+(period==='all')+'">All time</button></div>'+
       (rows.length?'<ol class="ml-t-ranking">'+rows.slice(0,50).map((r,i)=>
-          '<li><span class="ml-t-rank">'+(i+1)+'.</span><span>'+esc(r.nick)+(r.uid===uid?' (ti)':'')+'</span><strong>'+r.xp+' XP</strong></li>').join('')+'</ol>'
-        :'<p>Još nema potvrđenih lekcija za ovaj period.</p>')+
-      '<p class="ml-t-note">'+(yours>=0?'Tvoje mjesto: '+(yours+1)+'. · '+rows[yours].xp+' XP':'Još nemaš bodova u ovom periodu.')+'</p>'+
-      '<p class="ml-t-note">Labirint +10 · Pomoć +30 · Boja +5. Podaci su javni samo kao nadimak i bodovi.</p>'+
-      (pending.length?'<p class="ml-t-note">'+pending.length+' lekcija čeka potvrdu bodova.</p>':'')+
+          '<li><span class="ml-t-rank">'+(i+1)+'.</span><span>'+esc(r.nick)+(r.uid===uid?' (you)':'')+'</span><strong>'+r.xp+' XP</strong></li>').join('')+'</ol>'
+        :'<p>No verified lessons for this period yet.</p>')+
+      '<p class="ml-t-note">'+(yours>=0?'Your rank: '+(yours+1)+'. · '+rows[yours].xp+' XP':'You have no points this period yet.')+'</p>'+
+      '<p class="ml-t-note">Maze +10 · Help +30 · Color +5. Only nicknames and points are public.</p>'+
+      (pending.length?'<p class="ml-t-note">'+pending.length+' lessons awaiting point confirmation.</p>':'')+
       '<p class="ml-t-note" role="status">'+esc(localMessage())+'</p>'+
-      '<button type="button" data-t-action="refresh">Osvježi</button> <button type="button" data-t-action="edit">Promijeni nadimak</button>';
+      '<button type="button" data-t-action="refresh">Refresh</button> <button type="button" data-t-action="edit">Edit nickname</button>';
   }
   function makeRows(which){
     const now=new Date(),year=now.getFullYear(),month=now.getMonth();
@@ -69,7 +69,7 @@
     return Object.keys(profiles).map(id=>{
       const all=credits[id]||{};
       const events=Object.values(all).filter(v=>v&&typeof v.points==='number'&&typeof v.created_at==='number'&&v.created_at>=cutoff);
-      return {uid:id,nick:String(profiles[id]?.nickname||'Učitelj').slice(0,20),xp:events.reduce((n,v)=>n+v.points,0)};
+      return {uid:id,nick:String(profiles[id]?.nickname||'Teacher').slice(0,20),xp:events.reduce((n,v)=>n+v.points,0)};
     }).filter(r=>r.xp>0).sort((a,b)=>b.xp-a.xp||a.nick.localeCompare(b.nick,'hr'));
   }
   async function loadBoard(){
@@ -81,7 +81,7 @@
       ]);
       profiles=p.val()||{};credits=c.val()||{};
       if(!pending.length)error='';
-    }catch(e){error='Rang-lista još nije dostupna. Provjeri objavu novih Firebase pravila.';}
+    }catch(e){error='The leaderboard is not available yet. Check Firebase rules.';}
     if(open)render('board');
   }
   async function recoverUploadedCredits(){
@@ -115,7 +115,7 @@
       pending=pending.slice(-300);
       saveQueue();
     }catch(e){
-      error='Ne mogu provjeriti ranije lekcije. Provjeri Firebase prava i vezu.';
+      error='Unable to check older lessons. Check Firebase permissions and connection.';
     }
   }
   async function saveProfile(){
@@ -126,7 +126,7 @@
       });
       error='';profiles[uid]={nickname};
       await flush();await loadBoard();
-    }catch(e){error='Nadimak je spremljen samo na uređaju. Objavi nova Firebase pravila za zajedničku rang-listu.';}
+    }catch(e){error='Nickname saved on this device only. Publish Firebase rules to enable the shared leaderboard.';}
     if(open)render('board');
   }
   function credit(kind,id){
@@ -152,7 +152,7 @@
             });
           }
           pending.splice(i,1);saveQueue();
-        }catch(e){error='Bodovi čekaju Firebase pravila ili vezu.';break;}
+        }catch(e){error='Points are waiting for Firebase rules or a connection.';break;}
       }
     }finally{
       flushing=false;
@@ -178,12 +178,12 @@
     if(e.target.id!=='ml-teachers-form')return;
     e.preventDefault();
     const n=document.getElementById('ml-teachers-nick')?.value.trim()||'';
-    if(!validNick(n)){alert('Nadimak mora imati 3–20 znakova: slova, brojevi, _ ili -.');return;}
+    if(!validNick(n)){alert('Nickname must have 3–20 characters: letters, numbers, _ or -.');return;}
     nickname=n;
     try{localStorage.setItem(NICK_KEY,n);}catch(_){}
     render('board');void saveProfile();
   });
-  window.MaliTeachers={credit,open:()=>show(),refresh:loadBoard};
+  window.MaliTeachers={credit,open:()=>show(),refresh:loadBoard,nickname:()=>nickname};
   if(!nickname){
     let until=0;try{until=Number(localStorage.getItem(SKIP_KEY)||0);}catch(_){}
     if(Date.now()>until)show('profile');
@@ -208,7 +208,7 @@
       await flush();await loadBoard();
       if(open)render(!nickname?'profile':'board');
     }catch(e){
-      error='Firebase trenutno nije dostupan. Nadimak ostaje na ovom uređaju.';
+      error='Firebase is currently unavailable. Your nickname stays on this device.';
       if(open)render(!nickname?'profile':'board');
     }
   })();
