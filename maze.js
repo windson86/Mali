@@ -68,7 +68,7 @@
     if(window.MaliCloud&&window.MaliCloud.enqueueIncident)
       window.MaliCloud.enqueueIncident(incident);
     controlsState();
-    update('🐶 I think I'm going in circles ('+repeats+' times). Can you show me the way?');
+    update('🐶 I think I am going in circles ('+repeats+' times). Can you show me the way?');
   }
   function tickAuto(){
     if(!world||!world.autoRunning||world.done||el('overlay').hidden){stopAuto();return;}
@@ -186,7 +186,7 @@
     const cfg=window.MaliConfig.get().maze;
     N=cfg.size;START=[0,N-1];
     // Every ball, including number 1, now gets a fresh random location.
-    // Keep Mali's starting square fixed so we change only one training variable.
+    // Keep Mali’s starting square fixed so we change only one training variable.
     const options=[];
     for(let y=0;y<N;y++)for(let x=0;x<N;x++)
       if(pos(x,y)!==pos(...START))options.push([x,y]);
@@ -275,7 +275,7 @@
     // Keep this entire help region the same size when the first arrow starts
     // a correction. Previously the banner and action disappeared and moved the
     // arrow pad under the user's finger.
-    if(world.helpPending||world.helpActive)return '<div class="ml-result ml-help-banner" style="min-height:3.5em;display:flex;align-items:center;justify-content:center;text-align:center">🐶 I'm stuck! Please guide me to the ball with your finger, mouse or arrow keys.</div>'+
+    if(world.helpPending||world.helpActive)return '<div class="ml-result ml-help-banner" style="min-height:3.5em;display:flex;align-items:center;justify-content:center;text-align:center">🐶 I am stuck! Please guide me to the ball with your finger, mouse or arrow keys.</div>'+
       arrowControlsHtml()+
       '<div class="ml-actions ml-help-actions" style="min-height:41px"><button class="action" type="button" data-ml-action="help"'+
       (world.helpActive?' disabled aria-disabled="true"':'')+'>'+
@@ -292,7 +292,7 @@
   }
   function draw(message){
     if(!ctx)return;
-    ctx.open('maze','Mali's Maze 🐶',
+    ctx.open('maze','Mali’s Maze 🐶',
       '<p class="ml-help">Collect the balls in order <b>1 → '+world.goals.length+'</b>. You can see obstacles up to <b>'+world.cfg.vision_radius+' cells</b>. Swipe or tap on the grid, or click to guide me.</p>'+
       '<div id="ml-board" class="ml-board" role="grid" style="--ml-size:'+N+';--ml-font:'+(N===16?11:N===12?15:23)+'px;touch-action:none" aria-label="Maze '+N+' times '+N+'">'+cells()+'</div>'+
       '<div id="ml-stats" class="ml-stats">Steps: <b>'+world.moves+'</b> · Discovered: <b>'+world.known.size+'/'+world.walls.size+'</b> · Bumps: <b>'+world.hits+'</b></div>'+
@@ -387,7 +387,7 @@
       world.visits.set(pos(x,y),(world.visits.get(pos(x,y))||0)+1);
       if(byAuto)world.previous=direction;
     }
-    let msg=blocked?'I can't go that way!':'Let's keep going!';
+    let msg=blocked?'I cannot go that way!':'Let us keep going!';
     const target=world.goals[world.targetIndex];
     if(!blocked&&x===target[0]&&y===target[1]){
       world.targetIndex++;
