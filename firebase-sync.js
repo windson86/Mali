@@ -170,11 +170,11 @@
     void drain();
   }
   function navigationMessage() {
-    if(!configured)return 'Rute su spremljene lokalno; Firebase nije konfiguriran.';
-    if(navigationPending.size) return navigationPending.size+' ruta čeka Firebase ('+
-      (error ? 'provjeri pravila ili vezu' : ready?'sinkronizacija u tijeku':'povezujem se')+').';
-    return ready?'Uspješno poslane rute: '+navigationSent.size+' (ovaj preglednik).' :
-      'Rute su lokalno spremljene; čekam Firebase vezu.';
+    if(!configured)return 'Routes are saved locally; Firebase is not configured.';
+    if(navigationPending.size) return navigationPending.size+' routes awaiting Firebase ('+
+      (error ? 'check rules or connection' : ready?'sync in progress':'connecting')+').';
+    return ready?'Successfully uploaded routes: '+navigationSent.size+' (this browser).' :
+      'Routes are saved locally; waiting for Firebase connection.';
   }
   function enqueueFeedbackMany(items) {
     if(!configured || !Array.isArray(items))return;
@@ -182,11 +182,11 @@
     void drain();
   }
   function message() {
-    if (!configured) return 'Zajednička baza još nije povezana. Lekcije su sigurno spremljene na ovom uređaju.';
-    if (error) return 'Lekcije su lokalno spremljene. Slanje čeka: ' + error;
-    if (!ready) return 'Povezujem zajedničku bazu… Lekcije se zasad čuvaju lokalno.';
-    return pending.size || feedbackPending.size || navigationPending.size ? 'Zajednička baza: ' + (pending.size+feedbackPending.size+navigationPending.size) + ' zapisa čeka slanje.' :
-      'Zajednička baza povezana. Tvoje poslane lekcije spremljene su i na serveru.';
+    if (!configured) return 'The shared database is not connected yet. Lessons are safely stored on this device.';
+    if (error) return 'Lessons saved locally. Upload pending: ' + error;
+    if (!ready) return 'Connecting to the shared database… Lessons remain saved locally.';
+    return pending.size || feedbackPending.size || navigationPending.size ? 'Shared database: ' + (pending.size+feedbackPending.size+navigationPending.size) + ' records awaiting upload.' :
+      'Shared database connected. Uploaded lessons are also saved on the server.';
   }
   function enqueueMany(items) {
     if (!configured || !Array.isArray(items)) return;
@@ -246,7 +246,7 @@
           sentThisPage++;
           error = '';
         } catch (err) {
-          error = 'povezivanje ili sigurnosna pravila';
+          error = 'connection or security rules';
           console.warn('Mali: cloud upload nije uspio, lekcija je ostala lokalno.', err);
           break;
         }
@@ -296,7 +296,7 @@
     } catch (err) {
       identityResolve(null);
       error = 'provjeri Firebase konfiguraciju i Anonymous Authentication';
-      console.warn('Mali: zajednička baza nije dostupna. Lekcije ostaju lokalno.', err);
+      console.warn('Mali: shared database unavailable. Lessons remain stored locally.', err);
     }
   }());
 }());
