@@ -63,7 +63,7 @@
     context.open('colors-' + screen, title, body);
   }
   function showHome() {
-    openModal('home', 'Mali's Color School 🧠',
+    openModal('home', 'Mali’s Color School 🧠',
       '<p>Mali is learning ball colors from people. There is no hidden answer key.</p>' +
       '<div class="school-grid"><button class="action" data-school="teach">📖 Teach me</button>' +
       '<button class="action" data-school="test">🧠 Show what you know</button></div>' +
@@ -97,7 +97,7 @@
     currentGuess = mode === 'test' ? predict(sample) : null;
     var correction = !!correcting && !!currentGuess;
     var intro = mode === 'teach' ? 'Look at the ball and tell Mali which color you see.' :
-      !currentGuess ? 'I don't have a trained brain yet. Can you teach me this color?' :
+      !currentGuess ? 'I do not have a trained brain yet. Can you teach me this color?' :
       correction ? 'Thanks for correcting me! What color is the ball?' :
       '🐶 I think this is <strong>' + currentGuess + '</strong>. Am I right?';
     var controls = mode === 'test' && currentGuess && !correction
@@ -114,7 +114,7 @@
         (!window.MaliConfig || window.MaliConfig.get().colors.allow_unlisted_feedback) ?
         '<button class="action" type="button" data-school="unlisted">✕ None of these</button>' : '') +
       (!window.MaliConfig || window.MaliConfig.get().colors.allow_dont_know ?
-        '<button class="action" type="button" data-school="skip">🤷 I don't know</button>' : '') +
+        '<button class="action" type="button" data-school="skip">🤷 I do not know</button>' : '') +
       (correction ? '<button class="action" type="button" data-school="back-to-guess">← Back to my guess</button>' : '') +
       '<button class="action" type="button" data-school="home">← Back</button></div>' +
       '<p id="lessonStatus" class="muted">' + lessons.length + ' saved lessons on this device.</p>');
