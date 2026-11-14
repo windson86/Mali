@@ -10,7 +10,7 @@
   const MAX_DAY_MS = 86400000;
   let uid = '', sdk = null, database = null;
   let pending = Object.create(null), lastMeasured = performance.now();
-  let lastAction = 0, foreground = document.visibilityState === 'visible' && document.hasFocus();
+  let lastAction = 0, foreground = document.visibilityState === 'visible';
   let uploading = false;
 
   function hasNickname() {
@@ -35,8 +35,10 @@
   }
   function measure() {
     const now = performance.now();
-    // 'foreground' is the state since the last measurement. A blur/visibility
-    // event accounts for the time BEFORE the tab became hidden.
+    // 'foreground' is the page visibility since the last measurement.
+    // Visibility changes account for active time BEFORE the page was hidden.
+    // Do not depend on document.hasFocus(): iOS Safari can report false
+    // even while a player is interacting with a visible page.
     if (uid && foreground && lastAction && hasNickname()) {
       const from = Math.max(lastMeasured, lastAction);
       const until = Math.min(now, lastAction + IDLE_MS);
@@ -47,7 +49,7 @@
       }
     }
     lastMeasured = now;
-    foreground = document.visibilityState === 'visible' && document.hasFocus();
+    foreground = document.visibilityState === 'visible';
   }
   function onInteraction(event) {
     if (!uid || !event.isTrusted || (event.type === 'keydown' && event.repeat)) return;
